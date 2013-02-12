@@ -6,7 +6,7 @@ Created on Sep 18, 2012
 
 import numpy as np
 
-from bgpe.core.exceptions import BGPEException
+from magal.core.exceptions import BGPEException
 
 def matchobjs(list1, list2):
     '''

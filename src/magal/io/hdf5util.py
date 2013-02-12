@@ -8,7 +8,7 @@ import os
 import time
 import h5py
 
-from bgpe.core.version import _bgpe_name_, _bgpe_version_
+from magal.core.version import _magal_name_, _magal_version_
 
 def inithdf5(filename):
     # Check if file exists:
@@ -17,7 +17,7 @@ def inithdf5(filename):
     else:
     # If NOT, create it and put the default attributes
         db = h5py.File(filename, 'w')
-        db.attrs['version'] = '%s version %s' % (_bgpe_name_, _bgpe_version_)
+        db.attrs['version'] = '%s version %s' % (_magal_name_, _magal_version_)
         db.attrs['utc_created'] = time.asctime(time.gmtime())
     
     return db

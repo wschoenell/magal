@@ -7,10 +7,10 @@ Test the logger
 '''
 
 import logging
-import bgpe.core.log
+import magal.core.log
 
-log = logging.getLogger('bgpe.test')
-bgpe.core.log.setConsoleLevel(logging.INFO)
+log = logging.getLogger('magal.test')
+magal.core.log.setConsoleLevel(logging.INFO)
 
 log.warn('Warn test')
 log.info('Info test')

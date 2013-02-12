@@ -20,22 +20,22 @@ Created on Feb 23, 2012
 
 # metadata definition used by setup.py and others
 
-_bgpe_version_          = "0.1"
-_bgpe_name_             = "bgpe"
-_bgpe_requires_         = ""
-_bgpe_provides_         = "bgpe-core"
+_magal_version_          = "0.1"
+_magal_name_             = "magal"
+_magal_requires_         = ""
+_magal_provides_         = "magal-core"
 
-_bgpe_updated_          = '2012-10-31'
+_magal_updated_          = '2012-10-31'
 
-_bgpe_description_      = "BGPE - Bayesian Galaxy Properties Estimator (provisional name)"
-_bgpe_long_description_ = "Bayesian Galaxy Properties Estimator"
-_bgpe_author            = "William Schoenell"
-_bgpe_author_email_     = "wschoenell@gmail.com"
-_bgpe_license_          = "GPLv2"
-_bgpe_url_              = "http://astro.ufsc.br/"
-_bgpe_download_url_     = "http://astro.ufsc.br/"
-_bgpe_platform_         = "GNU/Linux"
-_bgpe_classifiers_      = [ 'Development Status :: 3 - Alpha',
+_magal_description_      = "MAGAL - MAGnitudes AnaLyzer"
+_magal_long_description_ = "Magnitudes Analyzer"
+_magal_author            = "William Schoenell"
+_magal_author_email_     = "wschoenell@gmail.com"
+_magal_license_          = "GPLv2"
+_magal_url_              = "https://github.com/wschoenell/magal/"
+_magal_download_url_     = "http://www.iaa.es/~william/magal/"
+_magal_platform_         = "GNU/Linux"
+_magal_classifiers_      = [ 'Development Status :: 3 - Alpha',
                                'Environment :: Console',
                                'Intended Audience :: Science/Research',
                                'Intended Audience :: End Users/Desktop',

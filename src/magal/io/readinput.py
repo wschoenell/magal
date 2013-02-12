@@ -6,7 +6,7 @@ Created on Oct 22, 2012
 
 import h5py
 
-from bgpe.core.exceptions import BGPEException
+from magal.core.exceptions import BGPEException
 
 class Input(object):
     '''
@@ -24,7 +24,7 @@ class Input(object):
         except IOError:
             raise BGPEException('Could not open file %s.' % photo_file)
         
-        #TODO: DEF FILETYPE = bgpe.???
+        #TODO: DEF FILETYPE = magal.???
         
         self.filtersystems = []
         self.ccds = {}

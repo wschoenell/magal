@@ -8,11 +8,11 @@ import numpy as np
 import h5py
 import os, sys
 
-from bgpe.io.readchi2 import Chi2
-from bgpe.fit.stats import percentiles
-from bgpe.io.readlibrary import Library
+from magal.io.readchi2 import Chi2
+from magal.fit.stats import percentiles
+from magal.io.readlibrary import Library
 
-from bgpe.plots.labels import aux_name_props #FIXME: Temporal. This should come from an XML file!
+from magal.plots.labels import aux_name_props #FIXME: Temporal. This should come from an XML file!
 
 db_dir = '/home/william/databases/'
 #db_dir = '/Users/william/Downloads/databases/'

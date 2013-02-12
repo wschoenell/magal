@@ -10,26 +10,26 @@ import time
 import argparse
 import matplotlib.pyplot as plt
 
-from bgpe.core.version import _bgpe_name_, _bgpe_version_
+from magal.core.version import _magal_name_, _magal_version_
 
 import atpy
 import numpy as np
 import pystarlight.io #@UnusedImport
 
-from bgpe.util.stellarpop import n_component
+from magal.util.stellarpop import n_component
 from pystarlight.util.redenninglaws import calc_redlaw
-from bgpe.io.hdf5util import inithdf5, read_filterhdf5
+from magal.io.hdf5util import inithdf5, read_filterhdf5
 from numpy.lib.recfunctions import drop_fields, merge_arrays, rename_fields
-from bgpe.io.readfilterset import readfilterset
+from magal.io.readfilterset import readfilterset
 import cosmocalc
 from pystarlight.util.constants import L_sun
-from bgpe.util.cosmo import zcor
-from bgpe.photometry.syntphot import spec2filterset
+from magal.util.cosmo import zcor
+from magal.photometry.syntphot import spec2filterset
 import os
 
 #logging
 import logging
-from bgpe.core.log import setConsoleLevel
+from magal.core.log import setConsoleLevel
 setConsoleLevel(logging.CRITICAL)
 
 def argparser():
@@ -55,7 +55,7 @@ def argparser():
     parser.add_argument('-z_fin', metavar='2.0', type=float, nargs=1, help='Final redshift', required=True)
     parser.add_argument('-dz', metavar='0.01', type=float, nargs=1, help='Delta redshift', required=True)
     parser.add_argument('-v', '-v', action='count')
-    parser.add_argument('--version', action='version', version='%s version %s' % (_bgpe_name_, _bgpe_version_))
+    parser.add_argument('--version', action='version', version='%s version %s' % (_magal_name_, _magal_version_))
     
     args = parser.parse_args()
     return args

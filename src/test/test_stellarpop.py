@@ -4,7 +4,7 @@ Created on Dec 10, 2012
 @author: william
 '''
 
-from bgpe.util.stellarpop import n_component
+from magal.util.stellarpop import n_component
 
 import numpy as np
 

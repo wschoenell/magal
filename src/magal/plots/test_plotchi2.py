@@ -9,8 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 
-from bgpe.plots.mosaic import get_mosaic
-from bgpe.io.readlibrary import Library
+from magal.plots.mosaic import get_mosaic
+from magal.io.readlibrary import Library
 
 def plot_chi2(axis, prop, likelihood, x, x_correct, nbins = 100):
     #plt.clf()

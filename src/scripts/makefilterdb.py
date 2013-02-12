@@ -22,8 +22,8 @@ import atpy
 
 import numpy as np
 
-from bgpe.io.readfilterset import readfilterset
-from bgpe.io.hdf5util import inithdf5
+from magal.io.readfilterset import readfilterset
+from magal.io.hdf5util import inithdf5
 
 if __name__ == '__main__' and len(sys.argv) > 2:
 

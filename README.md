@@ -1,5 +1,5 @@
 =====================================================
- Bayesian Galaxy (and whatever) Properties Estimator
+ 	     MAGAL - MAGnitudes AnaLyzer
 =====================================================
 
 William Schoenell <wschoenell@iaa.es>

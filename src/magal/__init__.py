@@ -13,7 +13,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 """
-BGPE - Bayesian Galaxy Properties Estimator (provisional name)
+MAGAL - MAGnitudes AnaLyzer
 ===========================================
 
 @author: William Schoenell
@@ -24,4 +24,4 @@ BGPE - Bayesian Galaxy Properties Estimator (provisional name)
 
 """
 
-from bgpe.core.version import *
+from magal.core.version import *

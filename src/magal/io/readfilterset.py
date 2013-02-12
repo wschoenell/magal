@@ -9,7 +9,7 @@ import numpy as np
 import h5py
 import atpy
 
-from bgpe.core.exceptions import ReadFilterException
+from magal.core.exceptions import ReadFilterException
 
 class readfilterset(object):
     '''

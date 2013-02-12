@@ -6,7 +6,7 @@ Created on Oct 22, 2012
 
 import h5py
 
-from bgpe.core.exceptions import BGPEException
+from magal.core.exceptions import BGPEException
 
 class Library(object):
     '''
@@ -24,7 +24,7 @@ class Library(object):
         except IOError:
             raise BGPEException('Could not open file %s.' % library_file)
         
-        #TODO: DEF FILETYPE = bgpe.library
+        #TODO: DEF FILETYPE = magal.library
         
         self.filtersystems = []
         self.ccds = {}

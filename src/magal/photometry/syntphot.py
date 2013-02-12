@@ -8,7 +8,7 @@ Created on Jul 17, 2012
 import numpy as np
 
 import logging
-import bgpe.core.log
+import magal.core.log
 
 
 def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
@@ -62,7 +62,7 @@ def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
     -----
 
     '''
-    log = logging.getLogger('bgpe.photometry.photoconv')
+    log = logging.getLogger('magal.photometry.photoconv')
     #Cut the spectrum on the filterset range. This improves the velocity of the rest of the accounts.
     obs_cut = obs_spec[np.bitwise_and(obs_spec['wl'] >= np.min(filter['wl']), obs_spec['wl'] <= np.max(filter['wl']))]
     
@@ -152,7 +152,7 @@ def spec2filterset(filterset, obs_spec, model_spec = None, badpxl_tolerance = 0.
     Parameters
     ----------
     filterset : object
-                Filter transmission curves (see: bgpe.io.readfilterset).
+                Filter transmission curves (see: magal.io.readfilterset).
 
     obs_spec : dict
                Observed Spectra. Dictionary containing the following entries:
@@ -192,13 +192,13 @@ def spec2filterset(filterset, obs_spec, model_spec = None, badpxl_tolerance = 0.
            
     See Also
     --------
-    spec2filter, bgpe.io.readfilterset
+    spec2filter, magal.io.readfilterset
     
     Notes
     -----
 
     '''
-    log = logging.getLogger('bgpe.photometry.photoconv')
+    log = logging.getLogger('magal.photometry.photoconv')
     filter_ids = np.unique(filterset['ID_filter'])
     mags = np.zeros(len(filter_ids), dtype = np.dtype([('m_ab', '<f8'), ('e_ab', '<f8')]))
     for i_filter in range(len(filter_ids)):
@@ -213,7 +213,7 @@ class photoconv(object):
     ''' 
     
     def __init__(self):
-        self.log = logging.getLogger('bgpe.photometry.photoconv') #TODO: This MUST come from the object
+        self.log = logging.getLogger('magal.photometry.photoconv') #TODO: This MUST come from the object
 
     def fromStarlight(self, filterset, arq_in, arq_syn, starlight_version='starlightv4', badpxl_tolerance=0.5):
         '''
@@ -222,7 +222,7 @@ class photoconv(object):
         Parameters
         ----------
         filterset : object
-                    Filter transmission curves (see: bgpe.io.readfilterset).
+                    Filter transmission curves (see: magal.io.readfilterset).
         arq_in : string
                  Starlight input filename (or atpy.TableSet(type='starlight_input') object)
         arq_syn : string
@@ -238,7 +238,7 @@ class photoconv(object):
         
         See Also
         --------
-        fromSDSSfits, bgpe.io.readfilterset
+        fromSDSSfits, magal.io.readfilterset
         
         '''
         
@@ -273,7 +273,7 @@ class photoconv(object):
         Parameters
         ----------
         filterset : string or object
-                    Filterset filename (or bgpe.io.readfilterset object)
+                    Filterset filename (or magal.io.readfilterset object)
         fits : string or object 
                SDSS .fits filename (or atpy.basetable.Table object)
         badpxl_tolerance : float 

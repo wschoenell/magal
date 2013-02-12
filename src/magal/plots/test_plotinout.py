@@ -7,10 +7,10 @@ Created on Nov 20, 2012
 import numpy as np
 import matplotlib.pyplot as plt
 
-from bgpe.io.readsummaries import Summaries
-from bgpe.io.readlibrary import Library
+from magal.io.readsummaries import Summaries
+from magal.io.readlibrary import Library
 
-from bgpe.plots.labels import aux_name_props, prop_labels #FIXME: Temporal. This should come from an XML file!
+from magal.plots.labels import aux_name_props, prop_labels #FIXME: Temporal. This should come from an XML file!
 
 
 summary_file = '/Users/william/Downloads/databases/stats_1k_0.01.hdf5'

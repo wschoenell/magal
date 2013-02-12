@@ -22,16 +22,16 @@ import cosmocalc
 
 from pystarlight.util.constants import Mpc_cm, L_sun
 
-import bgpe.core.log
+import magal.core.log
 
-from bgpe.io.readfilterset import readfilterset
-from bgpe.photometry.syntphot import photoconv
-from bgpe.photometry.syntphot import spec2filterset
-from bgpe.util.cosmo import zcor
-from bgpe.util.matchs import matchobjs
-from bgpe.io.hdf5util import inithdf5, read_filterhdf5
+from magal.io.readfilterset import readfilterset
+from magal.photometry.syntphot import photoconv
+from magal.photometry.syntphot import spec2filterset
+from magal.util.cosmo import zcor
+from magal.util.matchs import matchobjs
+from magal.io.hdf5util import inithdf5, read_filterhdf5
 
-from bgpe.core.version import _bgpe_name_, _bgpe_version_
+from magal.core.version import _magal_name_, _magal_version_
 
 
 def argparser():
@@ -57,7 +57,7 @@ def argparser():
     parser.add_argument('-z_fin', metavar='2.0', type=float, nargs=1, help='Final redshift', required=True)
     parser.add_argument('-dz', metavar='0.01', type=float, nargs=1, help='Delta redshift', required=True)
     parser.add_argument('-v', '-v', action='count')
-    parser.add_argument('--version', action='version', version='%s version %s' % (_bgpe_name_, _bgpe_version_))
+    parser.add_argument('--version', action='version', version='%s version %s' % (_magal_name_, _magal_version_))
     
     args = parser.parse_args()
     return args
@@ -69,10 +69,10 @@ if __name__ == '__main__':
     args = argparser()
     
     #logging
-    from bgpe.core.log import setConsoleLevel
+    from magal.core.log import setConsoleLevel
     setConsoleLevel(logging.DEBUG)
     
-    log = logging.getLogger('bgpe.starlight2photdb')
+    log = logging.getLogger('magal.starlight2photdb')
     
     # 0 - Main definitions
     in_dir = args.si[0]

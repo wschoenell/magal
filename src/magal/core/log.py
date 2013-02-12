@@ -64,7 +64,7 @@ def setConsoleLevel (level):
 fmt = LogFormatter(fmt='%(levelname)s -- %(name)s: %(message)s',
                        datefmt='%d-%m-%Y %H:%M:%S')
 
-root = logging.getLogger("bgpe")
+root = logging.getLogger("magal")
 root.setLevel(logging.WARNING)
 root.propagate = False
 

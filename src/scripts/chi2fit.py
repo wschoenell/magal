@@ -16,18 +16,18 @@ import os
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
-from bgpe.core.version import _bgpe_version_, _bgpe_updated_
-from bgpe.core.exceptions import BGPECLIError
+from magal.core.version import _magal_version_, _magal_updated_
+from magal.core.exceptions import BGPECLIError
 
 import h5py
 import numpy as np
 
-from bgpe.io.readlibrary import Library
-from bgpe.fit.stats import chi2
+from magal.io.readlibrary import Library
+from magal.fit.stats import chi2
 
 from multiprocessing import Process
 from multiprocessing import Queue
-from bgpe.io.readinput import Input
+from magal.io.readinput import Input
 
 DEBUG = 0
 TESTRUN = 0
@@ -46,8 +46,8 @@ def main(argv=None): # IGNORE:C0111
         sys.argv.extend(argv)
 
     program_name = os.path.basename(sys.argv[0])
-    program_version = "v%s" % _bgpe_version_
-    program_build_date = str(_bgpe_updated_)
+    program_version = "v%s" % _magal_version_
+    program_build_date = str(_magal_updated_)
     program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
     program_shortdesc = __import__('__main__').__doc__.split("\n")[1]
     program_license = '''%s
@@ -210,7 +210,7 @@ def calc_chi2(i_objs, o_list, inp, lib, n_ds, s_ds, chi2_ds, args, result_queue 
 #        log_mass = inp.properties[i_obj]['Mcor_fib']
         # To a galaxy with 10^10 M\odot:
 #        obj['m_ab'] = -2.5 * log_mass + obj['m_ab']
-        obj_err2 = np.power(obj['e_ab'], 2)
+#        obj_err2 = np.power(obj['e_ab'], 2)
         
         for i_z in range(N_z):
             if args.nz:
@@ -220,7 +220,7 @@ def calc_chi2(i_objs, o_list, inp, lib, n_ds, s_ds, chi2_ds, args, result_queue 
                 a = get_zslice(lib, lib_z[i_z])
             for i_tpl in range(N_tpl):
                 #w = 1 / (obj_err2 + 0.01 + np.power(a[i_tpl]['e_ab'], 2))
-                w = 1 / (obj_err2 + 0.01)**2 #FIXME:
+                w = 1 / obj['e_ab'] # + 0.01)
                 #print obj_err2
                 #print chi2(obj['m_ab'], a[i_tpl]['m_ab'], w)
                 n_tmp[i_obj,i_z,i_tpl], s_tmp[i_obj,i_z,i_tpl], chi2_tmp[i_obj,i_z,i_tpl] = chi2(obj['m_ab'], a[i_tpl]['m_ab'], w)

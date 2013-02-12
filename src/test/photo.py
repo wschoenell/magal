@@ -11,14 +11,14 @@ import matplotlib.pyplot as plt
 
 import pystarlight.io.starlighttable #io.starlighttable #@UnusedImport 
 
-from bgpe.io.readfilterset import readfilterset
-from bgpe.photometry.syntphot import photoconv
-from bgpe.photometry.syntphot import spec2filterset
-from bgpe.util.cosmo import zcor
+from magal.io.readfilterset import readfilterset
+from magal.photometry.syntphot import photoconv
+from magal.photometry.syntphot import spec2filterset
+from magal.util.cosmo import zcor
 
-from bgpe.util.constants import c_AngSec
+from magal.util.constants import c_AngSec
 
-from bgpe.core.log import setConsoleLevel
+from magal.core.log import setConsoleLevel
 setConsoleLevel(logging.DEBUG)
 
 f = readfilterset()
