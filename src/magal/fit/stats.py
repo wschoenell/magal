@@ -42,11 +42,3 @@ def chi2(m_o, m_l, w):
     chi2 = np.sum( np.power(m_o[mask] - m_l[mask] - s,2) * w2 )
     
     return n_good, s, chi2
-
-def percentiles(x,y,perc):
-        y = y[np.argsort(x)]
-        x = np.sort(x)
-        y = np.cumsum(y)
-        y = y/y[-1]
-        out = np.interp(perc, y, x)
-        return out
