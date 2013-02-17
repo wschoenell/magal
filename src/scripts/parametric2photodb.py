@@ -193,7 +193,7 @@ for i_base in range(aux_basesize):
                 O = zcor(obs_spec, z)
                 O['flux'] = O['flux'] * k_cosmo
 
-                x = spec2filterset(f.filterset, O, dlambda_eff = 3.0)
+                x = spec2filterset(f.filterset, O)
                 
 #                print 'z', z
 #                print aux0[i_base]

@@ -211,7 +211,7 @@ if __name__ == '__main__':
                 M = zcor(model_spec, z)
                 M['flux'] = M['flux'] * k_cosmo
 
-                x = spec2filterset(f.filterset, O, M, dlambda_eff = 3.0) 
+                x = spec2filterset(f.filterset, O, M) 
                 
                 db_m[i_z, i_file] = x
                 i_z = i_z + 1
