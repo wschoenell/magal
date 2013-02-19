@@ -6,7 +6,10 @@ Created on Sep 18, 2012
 
 import numpy as np
 
-from magal.core.exceptions import BGPEException
+from magal.core.exceptions import MAGALException
+
+#TODO: Remove this to use numpy.lib.recfunctions instead.
+# http://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html 
 
 def matchobjs(list1, list2):
     '''
@@ -23,7 +26,7 @@ def matchobjs(list1, list2):
             id_list.append(match)
             out_array.append(list2[match])
         else:
-            raise BGPEException('Error. There are elements on list2 that does not exists on list1.')
+            raise MAGALException('Error. There are elements on list2 that does not exists on list1.')
             
     return id_list 
         
