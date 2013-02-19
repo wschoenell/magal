@@ -31,7 +31,7 @@ def strException (e):
 
 #    Exceptions Hierarchy
 
-class BGPEException(Exception):
+class MAGALException(Exception):
 
     def __init__ (self, msg="", *args):
         Exception.__init__ (self, msg, *args)
@@ -41,18 +41,18 @@ class BGPEException(Exception):
         else:
             self.cause = strException(sys.exc_info()[1])
             
-class BGPECLIError(Exception):
+class MAGALCLIError(Exception):
     '''Generic exception to raise and log different fatal errors on CLI programs.'''
     def __init__(self, msg):
-        super(BGPECLIError).__init__(type(self))
+        super(MAGALCLIError).__init__(type(self))
         self.msg = "ERROR: %s" % msg
     def __str__(self):
         return self.msg
     def __unicode__(self):
         return self.msg
             
-class HDF5dbException(BGPEException):
+class HDF5dbException(MAGALException):
     pass
 
-class ReadFilterException(BGPEException):
+class ReadFilterException(MAGALException):
     pass
