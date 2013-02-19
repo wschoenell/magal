@@ -178,7 +178,7 @@ if __name__ == '__main__':
         # Read starlight output
         model_file = '%s/%s' % (out_dir, outfiles[i_file]) 
         tm = atpy.TableSet(model_file, type='starlightv4')
-        model_spec = np.copy(tm.spectra.data.view(dtype = np.dtype([('wl', '<f4'), ('f_obs', '<f4'), ('flux', '<f4'), ('f_wei', '<f4'), ('Best_f_SSP', '<f4')])))
+        model_spec = np.copy(tm.spectra.data.view(dtype = np.dtype([('wl', tm.spectra.l_obs.dtype), ('f_obs', '<f8'), ('flux', tm.spectra.f_syn.dtype), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')])))
         #     and input..
         obs_file = '%s/%s' % (in_dir, infiles[i_file])
         ts = atpy.TableSet(obs_file, type='starlight_input')

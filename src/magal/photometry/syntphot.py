@@ -9,6 +9,7 @@ import numpy as np
 
 import logging
 import magal.core.log
+from magal.core.exceptions import MAGALCLIError
 
 
 def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
@@ -131,7 +132,7 @@ def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
             #If we have # of bad pixels less than 50%, we simply neglect this point on the error acoounts,
             #and make flux = synthetic flux, if available, if not, interpolate values.
             if model_spec != None: obs_cut['flux'][bad] = model_cut['flux'][bad]
-            else: raise 'interpo' #TODO: interpolation!
+            else: raise MAGALCLIError('Extrapolation feature is not implemented! TODO! fid wl_min = %s and wl_max = %s. Observed spectrum wl max is %s.' % (filter['wl'].min(), filter['wl'].max(), obs_cut['wl'].max())) #TODO: interpolation!
 
     else: # If our observed obs_spec is ALL ok. =)
         log.debug('No bad pixel! =)')
@@ -255,10 +256,10 @@ class photoconv(object):
             obs_spec = arq_in.starlight_input.data.view(dtype = np.dtype([('wl', '<f8'), ('flux', '<f8'), ('error', '<f8'), ('flag', '<i8')]))
         
         try: # Check if it is an atpy or a filename
-            model_spec = arq_syn.spectra.data.view(dtype = np.dtype([('wl', '<f4'), ('f_obs', '<f4'), ('flux', '<f4'), ('f_wei', '<f4'), ('Best_f_SSP', '<f4')]))
+            model_spec = arq_syn.spectra.data.view(dtype = np.dtype([('wl', '<f8'), ('f_obs', '<f8'), ('flux', '<f8'), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')]))
         except AttributeError:
             arq_syn = atpy.TableSet(arq_syn, type=starlight_version)
-            model_spec = arq_syn.spectra.data.view(dtype = np.dtype([('wl', '<f4'), ('f_obs', '<f4'), ('flux', '<f4'), ('f_wei', '<f4'), ('Best_f_SSP', '<f4')]))    
+            model_spec = arq_syn.spectra.data.view(dtype = np.dtype([('wl', '<f8'), ('f_obs', '<f8'), ('flux', '<f8'), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')]))    
         
         obs_spec['flux'] = obs_spec['flux'] * 1e-17
         obs_spec['error'] = obs_spec['error'] * 1e-17
