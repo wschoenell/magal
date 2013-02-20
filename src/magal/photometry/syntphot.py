@@ -132,8 +132,10 @@ def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
         else:
             #If we have # of bad pixels less than 50%, we simply neglect this point on the error acoounts,
             #and make flux = synthetic flux, if available, if not, interpolate values.
-            if model_spec != None: obs_cut['flux'][bad] = model_cut['flux'][bad]
-            else: raise MAGALCLIError('Extrapolation feature is not implemented! TODO! fid wl_min = %s and wl_max = %s. Observed spectrum wl max is %s.' % (filter['wl'].min(), filter['wl'].max(), obs_cut['wl'].max())) #TODO: interpolation!
+            if model_spec != None:
+                obs_cut['flux'][bad] = model_cut['flux'][bad]
+            else: 
+                obs_cut['flux'][bad] = np.interp(obs_cut['wl'][bad], obs_cut['wl'][good], obs_cut['flux'][good])
 
     else: # If our observed obs_spec is ALL ok. =)
         log.debug('No bad pixel! =)')

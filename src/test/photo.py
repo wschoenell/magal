@@ -29,7 +29,7 @@ f.calc_filteravgwls()
 
 model_test_file = '%s/../../../data/test/STARLIGHT_test_output_v04.txt' % os.path.dirname(pystarlight.io.starlighttable.__file__)
 tm = atpy.TableSet(model_test_file, type='starlightv4')
-model_spec = np.copy(tm.spectra.data.view(dtype = np.dtype([('wl', '<f4'), ('f_obs', '<f4'), ('flux', '<f4'), ('f_wei', '<f4'), ('Best_f_SSP', '<f4')])))
+model_spec = np.copy(tm.spectra.data.view(dtype = np.dtype([('wl', '<f8'), ('f_obs', '<f8'), ('flux', '<f8'), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')])))
 
 obs_test_file = '%s/../../../data/test/STARLIGHT_test_input.7xt.bz2' % os.path.dirname(pystarlight.io.starlighttable.__file__)
 ts = atpy.TableSet(obs_test_file, type='starlight_input')
