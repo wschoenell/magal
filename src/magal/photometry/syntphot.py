@@ -97,20 +97,21 @@ def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
     #    - If there is MORE bad_pixels than badpxl_tolerance:
     #        Return a magnitude np.inf and an error of np.inf. 
     n = len(obs_cut)
+    not_neg_pix = (obs_cut['flux'] >= 0) #Fluxes CAN NOT be negative! NEVER!!!!! 
     if('flag' in obs_cut.dtype.names and 'error' in obs_cut.dtype.names): # First check if there is error AND flag.
-        good    = np.bitwise_and(obs_cut['flag'] <= 1, obs_cut['error'] > 0)
+        good    = np.bitwise_and(np.bitwise_and(obs_cut['flag'] <= 1, obs_cut['error'] > 0), not_neg_pix)
         bad     = np.invert(good)
         n_bad   = np.sum(bad)
     elif('error' in obs_cut.dtype.names): # Check if there is ONLY error.
-        good    = (obs_cut['error'] > 0)
+        good    = np.bitwise_and(obs_cut['error'] > 0, not_neg_pix)
         bad     = np.invert(good)
         n_bad   = np.sum(bad)
     elif('flag' in obs_cut.dtype.names): # Check if there is ONLY flag.
-        good    = (obs_cut['flag'] <= 1)
+        good    = np.bitwise_and(obs_cut['flag'] <= 1, not_neg_pix)
         bad     = np.invert(good)
         n_bad   = np.sum(bad)
     else: # If there is only spectra, all the pixels are good! =)
-        good    = (obs_cut['wl'] > 0)
+        good    = np.bitwise_and(obs_cut['wl'] > 0, not_neg_pix)
         bad     = np.invert(good)
         n_bad   = np.sum(bad)
     log.debug( 'N_points: %d, N_bad: %d' % (n, n_bad) )
