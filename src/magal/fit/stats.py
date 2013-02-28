@@ -35,7 +35,7 @@ def chi2(m_o, m_l, w):
     -----
     '''
     mask = (m_o == np.inf) + (m_l == np.inf) + (w == 0)
-    mask = np.invert(mask)
+    mask = np.invert(mask) + np.isnan(m_o) + np.isnan(w)
     n_good = np.sum(mask)
     w2 = np.power(w[mask],2)
     s = np.sum( w2 * (m_o[mask] - m_l[mask]) ) / np.sum( w2 ) # Scaling-factor = - 2.5 log M_\star
@@ -44,9 +44,36 @@ def chi2(m_o, m_l, w):
     return n_good, s, chi2
 
 def percentiles(x,y,perc):
-        y = y[np.argsort(x)]
-        x = np.sort(x)
-        y = np.cumsum(y)
-        y = y/y[-1]
-        out = np.interp(perc, y, x)
-        return out
+    '''
+    Returns the qth percentile of the array elements to a given properties vector and values vetor.
+    
+    Parameters
+    ----------
+    x : array_like
+        Properties values.
+
+    y : array_like
+        Array where percentiles are calculated on.
+        
+    
+    perc : float in range of [0,100] (or sequence of floats)
+           Percentile to compute which must be between 0 and 100 inclusive.
+              
+    Returns
+    -------
+    percentiles : {float, ndarray}
+                  The interpolated values, same shape as `perc`.
+                  
+    See Also
+    --------
+    numpy.percentile
+    
+    '''
+    perc = np.asanyarray(perc) / 100.
+    aux_idx = np.argsort(x)
+    y = y[aux_idx]
+    x = x[aux_idx]
+    y = np.cumsum(y)
+    y = y/y[-1]
+    out = np.interp(perc, y, x)
+    return out
