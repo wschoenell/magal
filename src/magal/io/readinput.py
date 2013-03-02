@@ -6,44 +6,58 @@ Created on Oct 22, 2012
 
 import h5py
 
-from magal.core.exceptions import BGPEException
+import logging
+from magal.core.exceptions import MAGALException
 
-class Input(object):
+class Input(h5py.File):
     '''
-    Reads a .hdf5 template Input photometry file. 
+    Reads a .hdf5 Input photometry file. 
     '''
 
     def __init__(self, photo_file):
         '''
-        photo_file: ...
+        Reads a.hdf5 input photometry file.
+        
+        Parameters
+        ----------
+        photo_file: string
+                    Photometry input file.
+        '''
+       
+
+        log = logging.getLogger('magal.io.readinput')
+        
+        # 0 - Open HDF5 file
+        h5py.File.__init__(self, photo_file, 'r')
+        
+        # 1.1 - Get Filtersets
+        self.filtersystems = self.keys()
+        self.filtersystems.remove('tables')
+        # 1.2 - and CCDs
+        self.ccds = [key for key in self[self.filtersystems[0]].keys()]
+        
+        try:
+            self.z = self['/tables/properties'].value['z']
+        except:
+            log.warning('Warning: The input photometry file does not have redshift table!')
+        self.properties = self['/tables/properties']
+        
+    def get_filtersys(self, fsys, ccd):
+        '''
+        Select a filter system and a ccd on the inputfile.
+        Will raise an exception if ccd or filtersystem id does not exists.
+        
+        Parameters
+        ----------
+        fsys: string
+              Filter system id.
+              
+        ccd: string
+             CCD id.
         '''
         
-        # Open HDF5 file
-        try:
-            self._inp =  h5py.File(photo_file, 'r')
-        except IOError:
-            raise BGPEException('Could not open file %s.' % photo_file)
-        
-        #TODO: DEF FILETYPE = magal.???
-        
-        self.filtersystems = []
-        self.ccds = {}
-        for fid in self._inp.keys():
-            if fid != 'tables':
-                self.filtersystems.append(fid)
-                self.ccds[fid] = self._inp['/%s' % fid].keys()
-        self.z = self._inp['/tables/properties'].value['z']
-        self.properties = self._inp['/tables/properties']
-        
-    def get_filtersys(self, fsys, ccd = None):
-        if ccd == None: ccd = self.ccds[fsys][0]
         if fsys in self.filtersystems:
-#            self.filterset = self._inp['/%s/%s/filterset' % (fsys, ccd)].value
-#            self.filtercurves = self._inp['/%s/%s/filtercurves' % (fsys, ccd)].value
-            self.data = self._inp['/%s/%s/data' % (fsys, ccd)]
+            self.data = self['/%s/%s/data' % (fsys, ccd)]
             self.path = '/%s/%s/' % (fsys, ccd)
-            print 'ok'
         else:
-            print ':('
-    
-    # TODO: Slicing???
+            raise MAGALException('Filtersystem/CCD %s/%s does not exists!' % (fsys, ccd))
