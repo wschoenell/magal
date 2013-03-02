@@ -9,9 +9,7 @@ import numpy as np
 import h5py
 import atpy
 
-from magal.core.exceptions import ReadFilterException
-
-class readfilterset(object):
+class FilterSet(object):
     '''
     This class reads a filterset from file and returns a "filter" object.
     '''
@@ -66,9 +64,13 @@ class readfilterset(object):
             self.filterset = np.loadtxt(filterfile, dtype=dt)
               
     def uniform(self, dl=1):
-        ''' Interpolates filter curves to match a specific uniform lambda coverage
-            Argument:
-            dl: Delta lambda spacing (default: 1 Angstrom)
+        '''
+        Interpolates filter curves to match a specific uniform lambda coverage.
+        
+        Parameters
+        ----------    
+        dl: float
+            Delta lambda spacing in Angstroms. (Default: 1 :math`\AA`)
         '''
         aux = []
         for fid in np.unique(self.filterset['ID_filter']):
@@ -81,7 +83,9 @@ class readfilterset(object):
             
         
     def calc_filteravgwls(self):
-        ''' Calulates the mean wavelenght of each filter (good for plotting)'''
+        '''
+        Calculate the mean wave length of each filter (useful for plotting).
+        '''
         avg = []
         for fid in np.unique(self.filterset['ID_filter']):
             avg.append(np.average(self.filterset[self.filterset['ID_filter'] == fid]['wl']))

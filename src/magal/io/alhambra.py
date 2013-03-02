@@ -13,7 +13,18 @@ from atpy.asciitables import read_ascii
 
 def read_ambcat(self, filename, header_max = 10000):
     '''
-    Reads catalogs on Alberto's format.
+    ATPY binding to read catalog on Molino et al 2013 format.
+    
+    Parameters
+    ----------
+    filename: string
+              Catalog filename.
+
+    Examples
+    --------
+    >>> import magal.io
+    >>> import atpy
+    >>> catalog = atpy.read_set(filename, 'alhambra_catalog')
     '''    
 
     self.reset()

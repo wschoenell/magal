@@ -11,3 +11,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+from distutils.version import LooseVersion
+from atpy import __version__ as atpy_version
+from magal.io.alhambra import read_ambcat
+
+if LooseVersion(atpy_version) >= LooseVersion('0.9.6'):
+    from atpy.registry import register_set_reader #@UnresolvedImport
+    from atpy.registry import register_reader #@UnresolvedImport
+else:
+    from atpy import register_set_reader #@UnresolvedImport @Reimport
+    from atpy import register_reader #@UnresolvedImport @Reimport
+
+register_set_reader('alhambra_catalog', read_ambcat)
