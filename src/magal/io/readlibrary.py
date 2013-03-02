@@ -6,7 +6,8 @@ Created on Oct 22, 2012
 
 import h5py
 
-from magal.core.exceptions import BGPEException
+import logging
+from magal.core.exceptions import MAGALException
 
 class Library(object):
     '''
@@ -15,16 +16,21 @@ class Library(object):
 
     def __init__(self, library_file):
         '''
-        library_file: ...
+        Reads a .hdf5 template Library.
+        
+        Parameters
+        ----------
+        library_file: string
+                      Template library file.
         '''
+        
+        self.log = logging.getLogger('magal.io.readinput')
         
         # Open HDF5 file
         try:
             self._lib =  h5py.File(library_file, 'r')
         except IOError:
-            raise BGPEException('Could not open file %s.' % library_file)
-        
-        #TODO: DEF FILETYPE = magal.library
+            raise MAGALException('Could not open file %s.' % library_file)
         
         self.filtersystems = []
         self.ccds = {}
@@ -36,14 +42,24 @@ class Library(object):
         self.properties = self._lib['/tables/properties']
         
     def get_filtersys(self, fsys, ccd = None):
+        '''
+        Select a filter system and a ccd on the library.
+        Will raise an exception if ccd or filtersystem id does not exists.
+        
+        Parameters
+        ----------
+        fsys: string
+              Filter system id.
+              
+        ccd: string
+             CCD id.
+        '''
         if ccd == None: ccd = self.ccds[fsys][0]
         if fsys in self.filtersystems:
             self.filterset = self._lib['/%s/%s/filterset' % (fsys, ccd)].value
             self.filtercurves = self._lib['/%s/%s/filtercurves' % (fsys, ccd)].value
             self.library = self._lib['/%s/%s/library' % (fsys, ccd)]
             self.path = '/%s/%s/' % (fsys, ccd)
-            print 'ok'
+            self.log.debug('Read filtersystem %s/%s' % (fsys, ccd))
         else:
-            print ':('
-    
-    # TODO: Slicing???
+            raise MAGALException('Filtersystem/CCD %s/%s does not exists!' % (fsys, ccd))
