@@ -1,0 +1,225 @@
+#!/usr/bin/env python
+# encoding: utf-8
+'''
+scripts.magal_plot -- Simple program to plot magal outputfile. 
+
+@author:     william
+        
+@license:    GPLv3
+
+@contact:    william@iaa.es
+'''
+
+import sys
+import os
+
+from argparse import ArgumentParser
+from argparse import RawDescriptionHelpFormatter
+
+from magal.core.version import _magal_version_, _magal_updated_
+from magal.core.exceptions import MAGALCLIError
+from magal.io.readmagal import MagalFit
+from magal.plots.mosaic import get_mosaic
+
+import numpy as np
+import matplotlib.pyplot as plt
+from magal.io.readlibrary import Library
+from magal.io.readinput import Input
+from magal.plots.plot_model import plot_chi2
+from magal.util.matchs import get_zslice
+
+import atpy
+from pystarlight.plots.plotstarlightfits import plot_fits_and_SFH
+import pystarlight.io
+from magal.util.constants import c_AngSec
+
+DEBUG = 0
+TESTRUN = 0
+PROFILE = 0
+
+
+########
+def plot_fit_film(m, l, i):
+
+    for i_obj in [1]: #range(m.N_obj):
+        
+        aux_Nlines = 3
+        aux_Nbins = 50
+        
+        plot_fit(i_obj,m,l,i, properties=['at_flux', 'aZ_flux', 'A_V', 'am_flux', 'EW_4861', 'EW_3727', 'EW_4861', 'EW_6563'], Nlines= aux_Nlines, Nbins=aux_Nbins)
+        
+        raw_input('Press ENTER for next...')
+
+def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
+    
+    # 0 - Init plot figure
+    plt.clf()
+    if properties == None: properties = m.props 
+    N_prop = len(properties)
+    fig = get_mosaic(Nlines, (3 + N_prop)/Nlines,row_sep = .03, i_fig = 1)
+    i_ax = -1
+    
+#    # 1 - Plot redshift
+#    if m.N_z > 1:
+#        i_ax += 1
+#        ax = fig.axes[i_ax]
+#        plot_chi2(ax, 'z', z_prob[i_obj], l.z, m.attrs.get('z'), nbins = Nbins)
+        
+    # 2 - Plot mass (from Scaling factor logM = s/-2.5)
+    i_ax += 1
+    ax = fig.axes[i_ax]
+    logM = np.divide(m.s,-2.5)
+    plot_chi2(ax, 'Mass', m.likelihood[i_obj], logM[i_obj], percentiles=m.s_Mass.percentiles[i_obj], nbins = Nbins)
+    
+    
+#    # 3 - Plot fit model
+#    i_ax += 1
+#    ax = fig.axes[i_ax]
+##    model = get_zslice(l, 0.01)['m_ab']
+##    m_model = np.zeros_like(model[0])
+##    for i_t in range(len(model)):
+##        m_model += (model[i_t] + m.s[i_obj,0,i_t]) * m.likelihood[i_obj,0,i_t]
+##    m_model = m_model / m.likelihood[i_obj,0].sum()
+##    ax.plot(l.filterset['wl_central'], m_model, '.', color = 'red', label='model')
+#    #if realdata:
+#    ax.plot(l.filterset['wl_central'], i.data[i_obj]['m_ab'], '.', color = 'blue', label='observed magnitude')
+#    i_bmx = tuple(m.i_BMX[i_obj])
+#    print i_obj, i_bmx[0], i_bmx[1]
+#    ax.plot(l.filterset['wl_central'], m.s[i_obj, i_bmx[0], i_bmx[1]] + l.library[i_bmx]['m_ab'], '.', color = 'red', label='best match')
+#    ax.legend()
+#    #elseif is simulation:
+##    ax.plot(l.filterset['wl_central'], i.library[i_obj]['m_ab'], '.', color = 'blue', label='observed magnitude')
+##    try:
+##    outfile = '/Volumes/Data/DR7/output/Base.BC03.S/%04d.%5d.%03d.7xt.sc5.C11.im.BS.bz2' % (i.properties['plateid'][i_obj], i.properties['mjd'][i_obj], i.properties['fiberID'][i_obj])
+#    outfile = '/Volumes/Data/DR7/output/Base.BC03.S/%s.7xt.sc5.C11.im.BS.bz2' % i.properties['id'][i_obj]
+#    print outfile
+##    sl_out = atpy.TableSet(outfile, type='starlightv4')
+##    ax.plot(sl_out.spectra['l_obs'], -2.5*np.log10(sl_out.spectra['f_obs']*sl_out.keywords['fobs_norm']*1e-17*(sl_out.spectra['l_obs']**2)/c_AngSec) - 48.6 , color='black', alpha=.3)
+##    i_norm_f = np.argwhere(l.filterset['wl_central'] > 4020)[0]
+##    spec_mag = -2.5 * np.log10( sl_out.spectra['f_obs']*sl_out.keywords['fobs_norm']*1e-17 ) - 2.41
+##    spec_mag /= spec_mag[np.argwhere(sl_out.spectra['l_obs'] >= l.filterset['wl_central'][i_norm_f])[0]] * i.data[i_obj]['m_ab'][i_norm_f]
+##    ax.plot(sl_out.spectra['l_obs'], spec_mag, color='black', alpha=.3)
+##    f = plot_fits_and_SFH(sl_out, i_fig=2)
+##    f.plot_fig_starlight()
+##    f.axleft_upp.set_ylim(-.5, 3)
+##    ax.set_xlim(f.axleft_upp.get_xlim())
+#    
+##    except: 
+#    print 'slout file not found!'
+
+    
+    # 4 - Plot properties
+    for prop in properties:
+        i_ax += 1
+        ax = fig.axes[i_ax]
+        
+        if prop.startswith('EW_'):
+            i_999 = (l.properties[str(prop)] > -998)
+            plot_chi2(ax, prop, m.likelihood_T[i_obj][i_999], l.properties[str(prop)][i_999], percentiles=m.__getattribute__(prop).percentiles[i_obj], x_correct = i.properties[i_obj][prop],nbins = Nbins, log=True)
+        else:
+            if prop in i.properties.value.dtype.names:
+                plot_chi2(ax, prop, m.likelihood_T[i_obj], l.properties[str(prop)], percentiles=m.__getattribute__(prop).percentiles[i_obj], x_correct = i.properties[i_obj][prop],nbins = Nbins)
+            else:
+                plot_chi2(ax, prop, m.likelihood_T[i_obj], l.properties[str(prop)], percentiles=m.__getattribute__(prop).percentiles[i_obj], nbins = Nbins)
+########
+
+
+def main(argv=None): # IGNORE:C0111
+    '''Command line options.'''
+    
+    if argv is None:
+        argv = sys.argv
+    else:
+        sys.argv.extend(argv)
+
+    program_name = os.path.basename(sys.argv[0])
+    program_version = "v%s" % _magal_version_
+    program_build_date = str(_magal_updated_)
+    program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
+    program_shortdesc = __import__('__main__').__doc__.split("\n")[1]
+    program_license = '''%s
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+USAGE
+''' % (program_shortdesc)
+
+    try:
+        # Setup argument parser
+        parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
+
+        parser.add_argument("-v", "--verbose", dest="verbose", action="count", help="set verbosity level [default: %(default)s]")
+#        parser.add_argument("-i", "--inputfile", dest="input", help="Input filename ", required=True)
+        
+        # Process arguments
+        args = parser.parse_args()
+        
+        if args.verbose > 0:
+            print("Verbose mode on")
+    
+    except KeyboardInterrupt:
+        ### handle keyboard interrupt ###
+        return 0
+    except Exception, e:
+        if DEBUG or TESTRUN:
+            raise(e)
+        indent = len(program_name) * " "
+        sys.stderr.write(program_name + ": " + repr(e) + "\n")
+        sys.stderr.write(indent + "  for help use --help")
+        return 2
+
+if __name__ == "__main__":
+    if DEBUG:
+        sys.argv.append("-h")
+        sys.argv.append("-v")
+        sys.argv.append("-r")
+    if TESTRUN:
+        import doctest
+        doctest.testmod()
+    if PROFILE:
+        import cProfile
+        import pstats
+        profile_filename = 'scripts.magal_plot_profile.txt'
+        cProfile.run('main()', profile_filename)
+        statsfile = open("profile_stats.txt", "wb")
+        p = pstats.Stats(profile_filename, stream=statsfile)
+        stats = p.strip_dirs().sort_stats('cumulative')
+        stats.print_stats()
+        statsfile.close()
+        sys.exit(0)
+#    sys.exit(main())
+    
+# 1 - Read magal output file
+outfile = '/Users/william/Downloads/databases/JPLUS_test_100.hdf5'
+fsys = 'JPLUS_FS_20130118_mz'
+ccd = '1'
+m = MagalFit(outfile)
+l = Library('/Users/william/Downloads/databases/'+m.attrs['lib'])
+#if real_data:
+#i = Input(m.attrs['ifile'])
+#if simulation:
+i = Library('/Users/william/Downloads/databases/'+m.attrs['ifile'])
+i.get_filtersys(fsys, ccd)
+i.data = get_zslice(i, 0.01)
+
+m.get_filtersys(fsys, ccd)
+l.get_filtersys(fsys, ccd)
+
+
+
+
+
+if m.N_z > 1: z_prob = np.sum(m.likelihood, axis=1)
+
+plot_fit_film(m,l,i)
