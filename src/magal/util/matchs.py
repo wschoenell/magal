@@ -9,7 +9,7 @@ import numpy as np
 from magal.core.exceptions import MAGALException
 
 #TODO: Remove this to use numpy.lib.recfunctions instead.
-# http://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html 
+# http://projects.scipy.org/numpy/browser/trunk/numpy/lib/recfunctions.py?rev=8032 
 
 def matchobjs(list1, list2):
     '''
@@ -29,4 +29,7 @@ def matchobjs(list1, list2):
             raise MAGALException('Error. There are elements on list2 that does not exists on list1.')
             
     return id_list 
-        
+
+def get_zslice(l, z):
+    i_z = np.argmin((l.z - z)**2) # Due to precision problems!
+    return np.copy(l.library[i_z,:])

@@ -22,7 +22,7 @@ import atpy
 
 import numpy as np
 
-from magal.io.readfilterset import readfilterset
+from magal.io.readfilterset import FilterSet
 from magal.io.hdf5util import inithdf5
 
 if __name__ == '__main__' and len(sys.argv) > 2:
@@ -34,7 +34,7 @@ if __name__ == '__main__' and len(sys.argv) > 2:
     
     for filter_file in sys.argv[2:]:
         aux_id = os.path.basename(filter_file).split('.')
-        f = readfilterset()
+        f = FilterSet()
         f.read(filter_file) 
         for fid in np.unique(f.filterset['ID_filter']):
             dataset = '/%s/%s/%s' % (aux_id[0], aux_id[1] ,fid)

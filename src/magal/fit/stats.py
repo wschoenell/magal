@@ -61,7 +61,7 @@ def percentiles(x,y,perc):
               
     Returns
     -------
-    percentiles : {float, ndarray}
+    percentiles : float, ndarray #FIXME:
                   The interpolated values, same shape as `perc`.
                   
     See Also
