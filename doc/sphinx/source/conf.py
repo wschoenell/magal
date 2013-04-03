@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# bgpe documentation build configuration file, created by
+# magal documentation build configuration file, created by
 # sphinx-quickstart on Mon Oct 22 12:52:25 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -44,7 +44,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'bgpe'
+project = u'magal'
 copyright = u'2012, William Schoenell'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -168,7 +168,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'bgpedoc'
+htmlhelp_basename = 'magaldoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -187,7 +187,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'bgpe.tex', u'bgpe Documentation',
+  ('index', 'magal.tex', u'magal Documentation',
    u'William Schoenell', 'manual'),
 ]
 
@@ -217,7 +217,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'bgpe', u'bgpe Documentation',
+    ('index', 'magal', u'magal Documentation',
      [u'William Schoenell'], 1)
 ]
 
@@ -231,8 +231,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'bgpe', u'bgpe Documentation',
-   u'William Schoenell', 'bgpe', 'One line description of project.',
+  ('index', 'magal', u'magal Documentation',
+   u'William Schoenell', 'magal', 'One line description of project.',
    'Miscellaneous'),
 ]
 
