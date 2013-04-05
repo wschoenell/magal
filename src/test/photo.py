@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 import pystarlight.io.starlighttable #io.starlighttable #@UnusedImport 
 
-from magal.io.readfilterset import readfilterset
+from magal.io.readfilterset import FilterSet
 from magal.photometry.syntphot import photoconv
 from magal.photometry.syntphot import spec2filterset
 from magal.util.cosmo import zcor
@@ -21,7 +21,7 @@ from magal.util.constants import c_AngSec
 from magal.core.log import setConsoleLevel
 setConsoleLevel(logging.DEBUG)
 
-f = readfilterset()
+f = FilterSet()
 #f.read('data_example/sdss_gri.filter')
 f.read('data_example/Alhambra_23.filter')
 f.uniform()
