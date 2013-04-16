@@ -37,7 +37,11 @@ class Input(h5py.File):
         self.ccds = [key for key in self[self.filtersystems[0]].keys()]
         
         try:
+<<<<<<< HEAD
             self.z = self['/tables/z'].value
+=======
+            self.z = self['/tables/z']
+>>>>>>> cd56c672e6030e157316be7689e3e4df1f6c5baa
         except:
             log.warning('The input photometry file does not have redshift table!')
         self.properties = self['/tables/properties']

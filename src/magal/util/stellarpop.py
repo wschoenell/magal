@@ -5,7 +5,7 @@ Created on Dec 10, 2012
 '''
 
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 class n_component: # Define a N-component SFH vector.
 

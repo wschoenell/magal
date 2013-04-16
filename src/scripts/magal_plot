@@ -46,7 +46,7 @@ def plot_fit_film(m, l, i):
         aux_Nlines = 3
         aux_Nbins = 50
         
-        plot_fit(i_obj,m,l,i, properties=['at_flux', 'aZ_flux', 'A_V', 'am_flux', 'EW_4861', 'EW_3727', 'EW_4861', 'EW_6563'], Nlines= aux_Nlines, Nbins=aux_Nbins)
+        plot_fit(i_obj,m,l,i, properties=['AV'], Nlines= aux_Nlines, Nbins=aux_Nbins)
         
         raw_input('Press ENTER for next...')
 
@@ -201,17 +201,22 @@ if __name__ == "__main__":
 #    sys.exit(main())
     
 # 1 - Read magal output file
-outfile = '/Users/william/Downloads/databases/JPLUS_test_100.hdf5'
-fsys = 'JPLUS_FS_20130118_mz'
-ccd = '1'
+# outfile = '/Users/william/Downloads/databases/JPLUS_test_100.hdf5'
+# fsys = 'JPLUS_FS_20130118_mz'
+# ccd = '1'
+
+outfile = '/Users/william/Downloads/test_magal.hdf5'
+fsys = 'Alhambra_24'
+ccd = '3'
+
 m = MagalFit(outfile)
-l = Library('/Users/william/Downloads/databases/'+m.attrs['lib'])
+l = Library(m.attrs['lib'])
 #if real_data:
-#i = Input(m.attrs['ifile'])
+i = Input(m.attrs['ifile'])
 #if simulation:
-i = Library('/Users/william/Downloads/databases/'+m.attrs['ifile'])
+# i = Library(m.attrs['ifile'])
 i.get_filtersys(fsys, ccd)
-i.data = get_zslice(i, 0.01)
+# i.data = get_zslice(i, 0.01)
 
 m.get_filtersys(fsys, ccd)
 l.get_filtersys(fsys, ccd)

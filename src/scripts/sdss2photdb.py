@@ -115,7 +115,7 @@ if __name__ == '__main__':
             db.create_dataset(name = '/%s/%s/filterset' % (filterid, ccd),  data = aux)
     
     for i_file in range(Nobj):
-                
+            
         for ccd in db_f.get(filterid).keys():
             # Get the filterid filter.
             f.read(filter_file, path='/%s/%s' % (filterid, ccd))
@@ -128,10 +128,6 @@ if __name__ == '__main__':
             fits = atpy.Table(infiles[i_file], type='fits', hdu='COADD')
             properties = atpy.Table(infiles[i_file], type='fits', hdu='SPECOBJ')
             ds_prop[i_file] = properties[['SPECOBJID', 'SOURCETYPE', 'Z', 'Z_ERR']]
-#             if properties['SOURCETYPE'][0].startswith('QSO'):
-#                 print 'QSO'
-#             elif properties['SOURCETYPE'][0].startswith('STAR'):
-#                 print 'STAR'
                 
             x = x.fromSDSSfits(f.filterset, fits)
             

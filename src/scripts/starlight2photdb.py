@@ -24,7 +24,7 @@ from pystarlight.util.constants import Mpc_cm, L_sun
 
 import magal.core.log
 
-from magal.io.readfilterset import readfilterset
+from magal.io.readfilterset import FilterSet
 from magal.photometry.syntphot import photoconv
 from magal.photometry.syntphot import spec2filterset
 from magal.util.cosmo import zcor
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     for filterid in db_f.keys():
         for ccd in db_f.get(filterid).keys():
             # Read filtercurves
-            f = readfilterset() # Init filterset object
+            f = FilterSet() # Init filterset object
             f.read(filter_file, path='/%s/%s' % (filterid, ccd))
             f.calc_filteravgwls()
             

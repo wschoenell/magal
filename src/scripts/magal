@@ -186,7 +186,7 @@ USAGE
     
     if args.nz:
         N_z, N_tpl = (1, lib.library.shape[1]) # If the redshift comes from inputfile, N_z = 1.
-        inp_z = inp.properties['z']
+        inp_z = inp.z #properties['z']
     else:
         N_z, N_tpl = lib.library.shape[:2]
         inp_z = lib.z

@@ -204,7 +204,7 @@ def spec2filterset(filterset, obs_spec, model_spec = None, badpxl_tolerance = 0.
     '''
     log = logging.getLogger('magal.photometry.photoconv')
     filter_ids = np.unique(filterset['ID_filter'])
-    mags = np.zeros(len(filter_ids), dtype = np.dtype([('m_ab', '<f8'), ('e_ab', '<f8')]))
+    mags = np.zeros(len(filter_ids), dtype = np.dtype([('m_ab', '<f4'), ('e_ab', '<f4')]))
     for i_filter in range(len(filter_ids)):
         filter = filterset[filterset['ID_filter'] == filter_ids[i_filter]]
         mags[i_filter]['m_ab'], mags[i_filter]['e_ab'] = spec2filter(filter, obs_spec, model_spec, badpxl_tolerance = badpxl_tolerance)
@@ -238,7 +238,7 @@ class photoconv(object):
         
         Returns
         -------
-        m_ab: numpy.ndarray dtype = [('m_ab', '<f8'), ('e_ab', '<f8')]
+        m_ab: numpy.ndarray dtype = [('m_ab', '<f4'), ('e_ab', '<f4')]
         
         See Also
         --------
