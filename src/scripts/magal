@@ -270,6 +270,10 @@ USAGE
             # 5.2.2 - Percentiles
             log.debug('Calculating property %s percentiles' % prop)
             p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt) # Percentiles dataset
+<<<<<<< HEAD
+=======
+            print prop 
+>>>>>>> faa361029e8ece888d1f8bd3a7ad04cb5c50a564
             for i_obj in range(N_obj):
                 p_ds[i_obj] = tuple(percentiles(lib.properties[prop], l_T[i_obj], perc))
                 
