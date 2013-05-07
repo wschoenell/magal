@@ -39,16 +39,19 @@ PROFILE = 0
 
 
 ########
-def plot_fit_film(m, l, i):
+def plot_fit_film(m, l, i, mask):
 
-    for i_obj in [1]: #range(m.N_obj):
         
-        aux_Nlines = 3
-        aux_Nbins = 50
+    aux_Nlines = 3
+    aux_Nbins = 50
+    
+    for i_obj in range(m.N_obj):
+        if mask[i_obj]:
+            plot_fit(i_obj,m,l,i, properties=['age_base'], Nlines= aux_Nlines, Nbins=aux_Nbins)
         
-        plot_fit(i_obj,m,l,i, properties=['AV'], Nlines= aux_Nlines, Nbins=aux_Nbins)
-        
-        raw_input('Press ENTER for next...')
+            raw_input('Press ENTER for next...')
+        else:
+            print 'skipped by mask %i' % i_obj
 
 def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
     
@@ -56,7 +59,7 @@ def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
     plt.clf()
     if properties == None: properties = m.props 
     N_prop = len(properties)
-    fig = get_mosaic(Nlines, (3 + N_prop)/Nlines,row_sep = .03, i_fig = 1)
+    fig = get_mosaic(Nlines, (4 + N_prop)/Nlines,row_sep = .03, i_fig = 1)
     i_ax = -1
     
 #    # 1 - Plot redshift
@@ -71,6 +74,26 @@ def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
     logM = np.divide(m.s,-2.5)
     plot_chi2(ax, 'Mass', m.likelihood[i_obj], logM[i_obj], percentiles=m.s_Mass.percentiles[i_obj], nbins = Nbins)
     
+    # 3 - Plot fit model
+    i_ax += 1
+    ax = fig.axes[i_ax]    
+#     if i.z:
+    print i.z[i_obj]
+    print l.z
+    aux_l = get_zslice(l, i.z[i_obj])
+#         aux_model = aux_l * m.likelihood[i_obj]
+    print i_obj
+    
+    aux_model = np.tensordot(m.likelihood[i_obj], np.array([aux_l['m_ab'][i_prop] + m.s[i_obj][0][i_prop] for i_prop in range(len(aux_l))]), [1,0])[0]
+#     aux_model = aux_l[m.i_BMX[i_obj]][0]
+#     aux_model['m_ab'] += m.s[i_obj, m.i_BMX[i_obj][0], m.i_BMX[i_obj][1]] 
+    print aux_model.shape
+    print aux_model
+#     np.array([aux_l['m_ab'][i] + m.s[i_obj][0][i] for i in range(len(aux_l))]) 
+    ax.plot(l.filterset['wl_central'], i.data.value[i_obj]['m_ab'], '.', color='blue')
+    ax.errorbar(l.filterset['wl_central'], i.data.value[i_obj]['m_ab'], yerr=i.data.value[i_obj]['e_ab'], fmt=None, marker=None)
+    ax.plot(l.filterset['wl_central'], aux_model, '.', color='red')
+#     aux_model = 
     
 #    # 3 - Plot fit model
 #    i_ax += 1
@@ -205,21 +228,27 @@ if __name__ == "__main__":
 # fsys = 'JPLUS_FS_20130118_mz'
 # ccd = '1'
 
-outfile = '/Users/william/Downloads/test_magal.hdf5'
+outfile = '/Users/william/Downloads/models/f08/model_lib_ssp_BS_magal_alhambra_RA356.0885Dec15.4679.ColorProBPZ.Prior1Peak.hdf5'
+db_dir = '/Users/william/Downloads/databases/'
+in_dir = '/Users/william/doutorado/Masses/'
 fsys = 'Alhambra_24'
+field = 8
 ccd = '3'
 
 m = MagalFit(outfile)
-l = Library(m.attrs['lib'])
+l = Library('%s/%s' % (db_dir, os.path.basename(m.attrs['lib'])) )
 #if real_data:
-i = Input(m.attrs['ifile'])
+i = Input('%s/f0%i/%s' % (in_dir, field, os.path.basename(m.attrs['ifile']) ) )
 #if simulation:
 # i = Library(m.attrs['ifile'])
+#fsys = i.get_filtersys
 i.get_filtersys(fsys, ccd)
 # i.data = get_zslice(i, 0.01)
 
 m.get_filtersys(fsys, ccd)
 l.get_filtersys(fsys, ccd)
+
+print l.z
 
 
 
@@ -227,4 +256,10 @@ l.get_filtersys(fsys, ccd)
 
 if m.N_z > 1: z_prob = np.sum(m.likelihood, axis=1)
 
-plot_fit_film(m,l,i)
+# mask = np.bitwise_and( (i.properties['zb_Max_1'] - i.properties['zb_Min_1']) < .05, i.properties.value['t_ml'] <= 4 )
+mask = i.properties['Odds_1'] > .9
+mask = np.bitwise_and(mask, i.properties.value['t_ml'] <= 4)
+mask = np.bitwise_and(mask, i.properties.value['MagPrior'] <= 24)
+mask = np.bitwise_and(mask, (i.properties['zb_Max_1'] - i.properties['zb_Min_1']) < 0.03 )
+
+plot_fit_film(m,l,i, mask)

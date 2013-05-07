@@ -16,7 +16,7 @@ def inithdf5(filename):
         raise Exception('Error! File %s already exists.' % filename)
     else:
     # If NOT, create it and put the default attributes
-        db = h5py.File(filename, 'w')
+        db = h5py.File(filename, 'w', driver = 'core')
         db.attrs['version'] = '%s version %s' % (_magal_name_, _magal_version_)
         db.attrs['utc_created'] = time.asctime(time.gmtime())
     
