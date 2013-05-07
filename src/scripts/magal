@@ -98,12 +98,14 @@ USAGE
 #        TODO: Sanity checks here!!!
         
         if(args.sim):     #Simulation-related sanity checks
-            if(args.obj_z):
+            if args.obj_z:
                 log.info('Using z = %s from inputfile on this simulation.' % args.obj_z)
             else:
                 log.info('Using z from inputfile tables.')
-            if(args.mass_field):
+            if args.mass_field:
                 log.info('Using mass from inputfile table field %s.' % args.mass_field)
+            if args.nz:
+                raise MAGALCLIError('Error! You cannot have -s and -nz options at the same time.')
      
         
         if args.verbose > 0:
@@ -208,9 +210,10 @@ USAGE
                     w = 1 / obj['e_ab']
                 
                 n_ds[i_obj,i_z,i_tpl], s_ds[i_obj,i_z,i_tpl], chi2_ds[i_obj,i_z,i_tpl] = chi2(obj['m_ab'], a[i_tpl]['m_ab'], w)
-                
-                if i_z % 5 == 0 and i_tpl == 0 and args.verbose > 0:
+                if (i_z % 5 == 0 or args.nz) and i_tpl == 0 and args.verbose > 0:
+                    log.setLevel('DEBUG')
                     log.debug('I\'m at i_obj, i_z --> %s, %s' % (i_obj, i_z))
+                    print 'I\'m at i_obj, i_z --> %s, %s' % (i_obj, i_z)
     
     # 4 - From \chi^2, eval likelihood
     # 4.1 - Likelihood
@@ -266,7 +269,8 @@ USAGE
             
             # 5.2.2 - Percentiles
             log.debug('Calculating property %s percentiles' % prop)
-            p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt) # Percentiles dataset 
+            p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt) # Percentiles dataset
+            print prop 
             for i_obj in range(N_obj):
                 p_ds[i_obj] = tuple(percentiles(lib.properties[prop], l_T[i_obj], perc))
                 
