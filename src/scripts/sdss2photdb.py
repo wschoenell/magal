@@ -76,9 +76,11 @@ if __name__ == '__main__':
     log.debug('Creating and populating DB file...')
     
     db = inithdf5(db_file)
-        # Tables group
-    db.create_group('/tables/')    
-        # Filtersystem groups
+    # Tables group
+    db.create_group('/tables/')
+    # Dummy redshift table
+    db.create_dataset(name = '/tables/z', data = np.array([0], dtype=np.float) )    
+    # Filtersystem groups
     for filterid in db_f.keys():
         db.create_group('/%s/' % filterid)
             # CCD groups
@@ -87,7 +89,7 @@ if __name__ == '__main__':
         
     # 2 - Write tables to hdf5 file
     log.debug('\tTables...')
-    ds_prop = db.create_dataset(name = '/tables/properties', shape=(len(infiles), 1), dtype=np.dtype([('SPECOBJID', '|S22'), ('SOURCETYPE', '|S19'), ('Z', '>f4'), ('Z_ERR', '>f4')]))
+    ds_prop = db.create_dataset(name = '/tables/properties', shape=(len(infiles),), dtype=np.dtype([('SPECOBJID', '|S22'), ('SOURCETYPE', '|S19'), ('Z', '>f4'), ('Z_ERR', '>f4')]))
 #    db.create_dataset(name = '/tables/z', data = np.arange(z_from, z_to, z_step) )
 
     
