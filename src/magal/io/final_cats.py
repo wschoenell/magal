@@ -106,16 +106,18 @@ def read_set(self, filename, header_max = 10000):
         if key == 'catalog_info':
             self.keywords[key] = header[key]
         else:
-            t = atpy.Table()
-            t.table_name = key
-            x = []
-            y = []
-            for key_ in header[key].keys():
-                x.append(key_)
-                y.append(header[key][key_])
-            t.add_column('x', x)
-            t.add_column('y', y)
-            self.append(t)
+            self.__setattr__(key, header[key])
+            
+#             t = atpy.Table()
+#             t.table_name = key
+#             x = []
+#             y = []
+#             for key_ in header[key].keys():
+#                 x.append(key_)
+#                 y.append(header[key][key_])
+#             t.add_column('x', x)
+#             t.add_column('y', y)
+#             self.append(t)
 
 
 def read_set_old(self, filename, header_max = 10000):
