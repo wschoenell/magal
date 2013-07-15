@@ -47,11 +47,9 @@ class FilterSet(object):
             
             for filter_id in aux_db.keys():
                 aux_filter = db_f.get('%s/%s' % (path, filter_id))
-                aux_fid = []
-                for i in range(len(aux_filter)):
-                    aux_fid.append(filter_id)
+                aux_fid = [filter_id for i in range(len(aux_filter))]
                 aux = atpy.Table()
-                aux.add_column(name = 'ID_filter', data = aux_fid)
+                aux.add_column(name = 'ID_filter', data = aux_fid, dtype='S20')
                 aux.add_column(name = 'wl', data = aux_filter['wl'])
                 aux.add_column(name = 'transm', data = aux_filter['transm'])
                 if filter_id == aux_db.keys()[0]:
