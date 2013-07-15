@@ -1,4 +1,6 @@
 *.pyc
+*.pyc
 .DS_Store
 .settings/
 *.profile
+*.hdf5
