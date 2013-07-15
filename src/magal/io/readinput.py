@@ -57,6 +57,9 @@ class Input(h5py.File):
                 self.z = self['/%s/%s/tables/z' % (fsys, ccd)].value
             except:
                 log.warning('The input photometry file does not have redshift table!')
-                self.properties = self['/%s/%s/tables/properties' % (fsys, ccd)]
+            try:
+                self.properties = self['/%s/%s/tables/properties' % (fsys, ccd)].value
+            except:
+                log.warning('The input photometry file does not have properties table!')
         else:
             raise MAGALException('Filtersystem/CCD %s/%s does not exists!' % (fsys, ccd))
