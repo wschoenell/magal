@@ -13,6 +13,7 @@ import ast, ConfigParser
 import numpy as np
 import h5py
 from magal.io.readfilterset import FilterSet
+from ConfigParser import NoOptionError
 
 
 try:
@@ -30,7 +31,7 @@ config.read(sys.argv[1])
 
 Filter = FilterSet()
 Filter.read(config.get('InputGeneral', 'filter_file'), path='%s/%s' % 
-            (config.get('InputGeneral', 'filter_name'), ast.literal_eval(config.get('InputMagnitudes', 'ccds'))[0]))
+            (config.get('InputGeneral', 'filter_name'), ast.literal_eval(config.get('InputMagnitudes', 'ccds')+',')[0]))
 Filter.calc_filteravgwls()
 
 ###
@@ -56,10 +57,13 @@ prop_ids = sorted(columns.keys())
 properties_dt.extend([(key, np.float) for key in prop_ids])
 properties_icols.extend([columns[key] for key in prop_ids])
 # -- FLAG properties (They should be integers. Maybe I would have to check which are int and which are not.)
-columns = ast.literal_eval(config.get('InputProperties', 'flags')) # IMPORTANT! Always use a sorted version of the array!
-prop_ids = sorted(columns.keys())
-properties_dt.extend([(key, np.int) for key in prop_ids])
-properties_icols.extend([columns[key] for key in prop_ids])
+try:
+    columns = ast.literal_eval(config.get('InputProperties', 'flags')) # IMPORTANT! Always use a sorted version of the array!
+    prop_ids = sorted(columns.keys())
+    properties_dt.extend([(key, np.int) for key in prop_ids])
+    properties_icols.extend([columns[key] for key in prop_ids])
+except NoOptionError:
+    print 'The input file does not have any flag associated.'
 
 properties_icols = properties_icols - np.ones_like(properties_icols) 
 
@@ -90,7 +94,7 @@ db = h5py.File(config.get('InputGeneral', 'output_file'), 'w')
 ###
 ###  3 - Open ascii tables and read the data
 ###
-catalog_fnames = ast.literal_eval(config.get('InputMagnitudes', 'cat_files'))
+catalog_fnames = ast.literal_eval(config.get('InputMagnitudes', 'cat_files')+',')
 
 NgalCum = {}
 i_cat = -1
@@ -98,7 +102,7 @@ for name in catalog_fnames:
     i_cat += 1
     aux_fname = '%s/%s' % (ast.literal_eval(config.get('InputMagnitudes', 'path_files')),
                            name)
-    ccd = ast.literal_eval(config.get('InputMagnitudes', 'ccds'))[i_cat]
+    ccd = ast.literal_eval(config.get('InputMagnitudes', 'ccds')+',')[i_cat]
     mag_data = np.loadtxt(aux_fname, dtype=input_dt, usecols=input_icols)
     prop_data = np.loadtxt(aux_fname, dtype=properties_dt, usecols=properties_icols)
 
@@ -163,7 +167,7 @@ for name in catalog_fnames:
         x = np.zeros(Nfilters, dtype = np.dtype([('m_ab', '<f8'), ('e_ab', '<f8')])) 
         x['m_ab'] = [mag_data[i_obj][fil] for fil in filters_filterfile]  
         x['e_ab'] = [mag_data[i_obj]['d%s' % fil] for fil in filters_filterfile] 
-        badpxl = (x['m_ab'] >= 97) #FIXME: Should be passed by the config file.
+        badpxl = np.bitwise_or(x['m_ab'] >= 97, x['m_ab'] <= -97) #FIXME: Should be passed by the config file.
         x['m_ab'][badpxl] = np.inf
         x['e_ab'][badpxl] = np.inf
      
