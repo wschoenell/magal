@@ -32,6 +32,7 @@ from magal.io.readinput import Input
 from magal.util.matchs import get_zslice
 import ConfigParser
 from ConfigParser import NoSectionError, NoOptionError
+import ast
 
 DEBUG = 0
 TESTRUN = 0
@@ -207,7 +208,13 @@ USAGE
         N_z, N_tpl = lib.library.shape[:2]
         inp_z = lib.z
     
-    # 3.3 - Eval \chi^2      
+    try:
+        filters_include = ast.literal_eval(config.get('FitGeneral', 'filters_include'))
+        filterset_mask = np.sum([k == lib.filterset['ID_filter'] for k in filters_include], axis=0, dtype=np.bool)
+    except NoOptionError:
+        filterset_mask = np.ones(len(lib.filterset), dtype=np.bool)
+    
+    # 3.3 - Eval \chi^2
     for i_obj in range(N_obj):
         obj = o_list[i_obj]        
         for i_z in range(N_z):
@@ -219,11 +226,11 @@ USAGE
             for i_tpl in range(N_tpl):
                 # 3.2 - If this is a simulation, use 1% of magnitude as error.
                 if(is_simulation):
-                    w = 1 / (obj['e_ab'] + np.random.normal(size=len(obj['m_ab']), scale=0.05)) #TODO: Put a more realistic error component.
+                    w = 1 / (obj['e_ab'][filterset_mask] + np.random.normal(size=len(obj['m_ab'][filterset_mask]), scale=0.05)) #TODO: Put a more realistic error component.
                 else:
-                    w = 1 / obj['e_ab']
+                    w = 1 / obj['e_ab'][filterset_mask]
                 
-                n_ds[i_obj,i_z,i_tpl], s_ds[i_obj,i_z,i_tpl], chi2_ds[i_obj,i_z,i_tpl] = chi2(obj['m_ab'], a[i_tpl]['m_ab'], w)
+                n_ds[i_obj,i_z,i_tpl], s_ds[i_obj,i_z,i_tpl], chi2_ds[i_obj,i_z,i_tpl] = chi2(obj['m_ab'][filterset_mask], a[i_tpl]['m_ab'][filterset_mask], w)
                 if (i_z % 5 == 0 or config.getboolean('FitGeneral', 'Nz')) and i_tpl == 0 and args.verbose > 0:
                     log.setLevel('DEBUG')
                     log.debug('I\'m at i_obj, i_z --> %s, %s' % (i_obj, i_z))
