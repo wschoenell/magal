@@ -7,6 +7,8 @@ Created on Feb 14, 2013
 import h5py
 
 from magal.core.exceptions import MAGALException
+import os
+import ConfigParser
 
 class MagalFit(h5py.File):
     '''
@@ -41,6 +43,19 @@ class MagalFit(h5py.File):
         
         # 1.4 - Def some useful data
         self.N_prop = len(self.props)
+        
+        # 1.5 - Read configuration if exists
+        try:
+            self.ini_file = self['/ini_file'][0]
+            a = os.tmpfile()
+            a.write(self.ini_file)
+            a.seek(0)
+            self.input_config = ConfigParser.ConfigParser()
+            self.input_config.readfp(a)
+            a.close()
+        except KeyError: # If configuration does not exists, move on...
+            self.ini_file = ''
+            self.input_config = ConfigParser.ConfigParser()
         
         
     

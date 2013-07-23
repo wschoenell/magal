@@ -181,6 +181,12 @@ USAGE
     f.attrs.create('lib', config.get('FitGeneral', 'lib_file'))
     f.attrs.create('type', magal_type)
     f.attrs.create('version', '%s - %s' % (program_name, program_version))
+    
+    # Write full .ini file on model outputfile.
+    aux_ini = open(args.input, 'r').read()
+    str_type = h5py.new_vlen(str)
+    ds = f.create_dataset('/ini_file', shape=(1,), dtype=str_type)
+    ds[:] = aux_ini
     ### 
 
     # 2.3 - Data matrices
@@ -247,12 +253,12 @@ USAGE
     l_T = np.sum(l, axis=1)
     norm = np.sum(l_T, axis=1)
     l_T = np.array([l_T[i_obj] / norm[i_obj] for i_obj in range(N_obj)])
-    lT_ds = f.create_dataset( '%s/likelihood_template' % (lib.path), data = l_T )
+    lT_ds = f.create_dataset( '%s/likelihood_template' % (lib.path), data = l_T )  # @UnusedVariable
     if N_z > 1:
         l_z = np.sum(l, axis=2)
         norm = np.sum(l_z, axis=1)
         l_z = np.array([l_z[i_obj] / norm[i_obj] for i_obj in range(N_obj)])
-        lz_ds = f.create_dataset( '%s/likelihood_redshift' % (lib.path), data = np.array(l_z) )
+        lz_ds = f.create_dataset( '%s/likelihood_redshift' % (lib.path), data = np.array(l_z) )  # @UnusedVariable
     
     # 5 - From likelihood, eval statistics...
     # 5.0 - Some definitions...
