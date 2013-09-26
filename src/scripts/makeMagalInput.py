@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Created on Jul 4, 2013
 
@@ -68,7 +69,11 @@ except NoOptionError:
 properties_icols = properties_icols - np.ones_like(properties_icols) 
 
 # - Check if the columns of the input file are the same as on filter file.
-filters_filterfile = np.unique(Filter.filterset['ID_filter'])
+filters_filterfile = np.sort(np.unique(Filter.filterset['ID_filter']))
+
+if np.sum((filter_ids != filters_filterfile)) > 0:
+    print 'Filter identifiers on the inputfile must be the same as on the library.'
+    sys.exit(1)
 
 missing_filters = [fid for fid in filter_ids if not fid in filters_filterfile]
 if len(missing_filters) > 0:
@@ -128,8 +133,7 @@ for name in catalog_fnames:
                                   chunks = True,
                                   maxshape = (None,) )
         else:
-            db_redshift[NgalCum[ccd]:NgalCum[ccd]+Ngal] = redshift_data
-            
+            db_redshift[NgalCum[ccd]:NgalCum[ccd]+Ngal] = redshift_data            
         
         
 
