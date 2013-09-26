@@ -33,12 +33,17 @@ from magal.util.matchs import get_zslice
 import ConfigParser
 from ConfigParser import NoSectionError, NoOptionError
 import ast
+from magal.fit.magal_aux import chi2_parameters, chi2_wrapper
+import multiprocessing
 
 DEBUG = 0
 TESTRUN = 0
 PROFILE = 0
 
     
+
+
+
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
@@ -172,7 +177,7 @@ USAGE
     # 2 - Output file
     # 2.1 - init 
     try:
-        f = h5py.File(config.get('FitGeneral', 'output_file'), mode = 'w-')
+        f = h5py.File(config.get('FitGeneral', 'output_file'), mode = 'w-', driver='core')
     except IOError:
         raise MAGALCLIError('File %s already exists.' % config.get('FitGeneral', 'output_file'))
     
@@ -221,27 +226,17 @@ USAGE
         filterset_mask = np.ones(len(lib.filterset), dtype=np.bool)
     
     # 3.3 - Eval \chi^2
-    for i_obj in range(N_obj):
-        obj = o_list[i_obj]        
-        for i_z in range(N_z):
-            if config.getboolean('FitGeneral', 'Nz'): # If redshift comes from inputfile.
-                a = get_zslice(lib, inp_z[i_obj])
-                log.debug('Redshift slicing inp_z, lib_z: %3.4f, %3.4f' % (inp_z[i_obj], lib.z[np.argmin((lib.z - inp_z[i_obj])**2)]) )
-            else:
-                a = get_zslice(lib, inp_z[i_z])
-            for i_tpl in range(N_tpl):
-                # 3.2 - If this is a simulation, use 1% of magnitude as error.
-                if(is_simulation):
-                    w = 1 / (obj['e_ab'][filterset_mask] + np.random.normal(size=len(obj['m_ab'][filterset_mask]), scale=0.05)) #TODO: Put a more realistic error component.
-                else:
-                    w = 1 / obj['e_ab'][filterset_mask]
-                
-                n_ds[i_obj,i_z,i_tpl], s_ds[i_obj,i_z,i_tpl], chi2_ds[i_obj,i_z,i_tpl] = chi2(obj['m_ab'][filterset_mask], a[i_tpl]['m_ab'][filterset_mask], w)
-                if (i_z % 5 == 0 or config.getboolean('FitGeneral', 'Nz')) and i_tpl == 0 and args.verbose > 0:
-                    log.setLevel('DEBUG')
-                    log.debug('I\'m at i_obj, i_z --> %s, %s' % (i_obj, i_z))
-                if args.verbose > 0 and i_tpl == 0:    
-                    print 'I\'m at i_obj, i_z --> %s, %s' % (i_obj, i_z)
+    Nz = config.getboolean('FitGeneral', 'Nz')
+    lib_file, filter_sys, ccd  = config.get('FitGeneral', 'lib_file'), config.get('FitGeneral', 'filter_sys'), config.get('FitGeneral', 'ccd')
+    params = chi2_parameters(Nz, is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask, lib_file, filter_sys, ccd)
+    pool = multiprocessing.Pool()
+    print 'started pool'
+    for result in pool.imap(chi2_wrapper, params):
+        i_obj, aux_n, aux_s, aux_chi2 = result
+        n_ds[i_obj], s_ds[i_obj], chi2_ds[i_obj] = aux_n, aux_s, aux_chi2
+#         i_obj,i_z,i_tpl, aux_chi2, aux_n, aux_s = result
+#         print i_obj,i_z,i_tpl
+#         n_ds[i_obj,i_z,i_tpl], s_ds[i_obj,i_z,i_tpl], chi2_ds[i_obj,i_z,i_tpl] = aux_chi2, aux_n, aux_s
     
     # 4 - From \chi^2, eval likelihood
     # 4.1 - Likelihood
