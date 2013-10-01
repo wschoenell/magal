@@ -65,10 +65,6 @@ filter_file = config.get('LibraryGeneral', 'filter_file')
 db_f = read_filterhdf5(filter_file)
 
 # 0 - Library Parameters
-#TODO: config
-# z_from = 0.001
-# z_to = 7.0
-# z_step = .001
 z_from = np.float(config.get('LibraryParameters', 'z_from'))
 z_to = np.float(config.get('LibraryParameters', 'z_to'))
 z_step = np.float(config.get('LibraryParameters', 'z_step'))
@@ -83,29 +79,12 @@ Nz = len(z_range)
 # Bayesian technique and span 4 dimensions in parameter space: star
 # formation history (\tau), age, metallicity, and dust content.
 
-#TODO: config
-# tau = np.array([0.04, 0.14, 0.40, 0.54, 0.60, 0.70, 0.71, 0.87, 0.92, 0.93, 1.39, 1.62,
-#                 1.75, 1.75, 1.87, 1.99, 2.14, 2.63, 2.74, 3.06, 3.19, 4.08, 4.12, 4.79,
-#                 5.26, 5.50, 6.09, 6.28, 6.98, 7.71, 7.88, 7.96, 8.17, 8.89, 9.10]) * 1e9  # For Gyr --> yr conversion
-
 tau = ast.literal_eval(config.get('LibraryParameters', 'tau'))
 t0 = ast.literal_eval(config.get('LibraryParameters', 't0'))
-# 
-# t0 = np.array([0.67, 0.98, 1.28, 2.74, 4.36, 5.06, 5.16, 6.15, 6.46, 6.75, 6.98, 7.97,
-#                8.71, 9.10, 9.53, 9.70]) * 1e9  # For Gyr --> yr conversion
-
-#Z = [0.0001, 0.0004, 0.004, 0.008, 0.02, 0.05]
-
-# av_from = 0
-# av_to = 2
-# N_av = 4
-# av_range = np.linspace(av_from, av_to, N_av)
 
 av_range = ast.literal_eval(config.get('LibraryParameters', 'a_v'))
 
-
 lib_size = len(tau) * len(t0) * len(Z) * len(av_range) # \tau, age, metallicity and dust content.
-# lib_size = len(tau) * len(t0) * len(av_range) # \tau, age and dust content.
 
 try:
     os.unlink(libfile)
@@ -134,7 +113,6 @@ for ccd in ccds:
     aux['wl_central'] = f.filteravgwls
     db.create_dataset(name = '/%s/%s/filterset' % (filterid, ccd),  data = aux)
     chunk_z = Nz #, #np.int(64*1024/(8*Nl))
-    print 'debug>', chunk_z
     db_m = db.create_dataset('/%s/%s/%s' % (filterid, ccd, 'library'), shape = (Nz,lib_size, Nl), chunks = (chunk_z,1,Nl), compression=4, dtype = np.dtype([('m_ab', '<f4'), ('e_ab', '<f4')]) )
     db_vec.update({ccd: db_m})
 
@@ -177,8 +155,6 @@ from multiprocessing import Pool
 q = calc_redlaw(bt[Z == Z[0]]['l_ssp'][0], 3.1, 'CCM')
 i_model = -1
 aux_t = time.time()
-# for Z_lib in Z:
-#     print 'Z> ', Z_lib
 
 for Z_lib in Z:
     for t_start in t0:
