@@ -18,7 +18,7 @@ import numpy as np
 import pystarlight.io #@UnusedImport
 
 from magal.util.stellarpop import n_component
-from pystarlight.util.redenninglaws import calc_redlaw
+from pystarlight.util.redenninglaws import Charlot_RedLaw
 from magal.io.hdf5util import inithdf5, read_filterhdf5
 from numpy.lib.recfunctions import drop_fields, merge_arrays, rename_fields
 from magal.io.readfilterset import FilterSet
@@ -38,8 +38,6 @@ setConsoleLevel(logging.CRITICAL)
 
 
 #if __name__ == '__main__':
-
-t0 = time.time() # To measure execution times.
 
 config = ConfigParser.ConfigParser()
 config.read(sys.argv[1])
@@ -65,10 +63,6 @@ filter_file = config.get('LibraryGeneral', 'filter_file')
 db_f = read_filterhdf5(filter_file)
 
 # 0 - Library Parameters
-#TODO: config
-# z_from = 0.001
-# z_to = 7.0
-# z_step = .001
 z_from = np.float(config.get('LibraryParameters', 'z_from'))
 z_to = np.float(config.get('LibraryParameters', 'z_to'))
 z_step = np.float(config.get('LibraryParameters', 'z_step'))
@@ -83,29 +77,13 @@ Nz = len(z_range)
 # Bayesian technique and span 4 dimensions in parameter space: star
 # formation history (\tau), age, metallicity, and dust content.
 
-#TODO: config
-# tau = np.array([0.04, 0.14, 0.40, 0.54, 0.60, 0.70, 0.71, 0.87, 0.92, 0.93, 1.39, 1.62,
-#                 1.75, 1.75, 1.87, 1.99, 2.14, 2.63, 2.74, 3.06, 3.19, 4.08, 4.12, 4.79,
-#                 5.26, 5.50, 6.09, 6.28, 6.98, 7.71, 7.88, 7.96, 8.17, 8.89, 9.10]) * 1e9  # For Gyr --> yr conversion
-
 tau = ast.literal_eval(config.get('LibraryParameters', 'tau'))
 t0 = ast.literal_eval(config.get('LibraryParameters', 't0'))
-# 
-# t0 = np.array([0.67, 0.98, 1.28, 2.74, 4.36, 5.06, 5.16, 6.15, 6.46, 6.75, 6.98, 7.97,
-#                8.71, 9.10, 9.53, 9.70]) * 1e9  # For Gyr --> yr conversion
 
-#Z = [0.0001, 0.0004, 0.004, 0.008, 0.02, 0.05]
+mu = np.float(config.get('LibraryParameters', 'mu'))
+tau_range = ast.literal_eval(config.get('LibraryParameters', 'tau_v'))
 
-# av_from = 0
-# av_to = 2
-# N_av = 4
-# av_range = np.linspace(av_from, av_to, N_av)
-
-av_range = ast.literal_eval(config.get('LibraryParameters', 'a_v'))
-
-
-lib_size = len(tau) * len(t0) * len(Z) * len(av_range) # \tau, age, metallicity and dust content.
-# lib_size = len(tau) * len(t0) * len(av_range) # \tau, age and dust content.
+lib_size = len(tau) * len(t0) * len(Z) * len(tau_range) # \tau, age, metallicity and dust content.
 
 try:
     os.unlink(libfile)
@@ -133,9 +111,9 @@ for ccd in ccds:
     aux['ID_filter'] = np.unique(f.filterset['ID_filter'])
     aux['wl_central'] = f.filteravgwls
     db.create_dataset(name = '/%s/%s/filterset' % (filterid, ccd),  data = aux)
-    chunk_z = Nz #, #np.int(64*1024/(8*Nl))
-    print 'debug>', chunk_z
-    db_m = db.create_dataset('/%s/%s/%s' % (filterid, ccd, 'library'), shape = (Nz,lib_size, Nl), chunks = (chunk_z,1,Nl), compression=4, dtype = np.dtype([('m_ab', '<f4'), ('e_ab', '<f4')]) )
+    chunk_size = 1 *  lib_size * Nl # chunk_size = 1 (z) * lib_size * n_filters
+    chunk_z = int(chunk_size / (64*1024) ) + 1 # make chunk_size of about 64kb and > 1
+    db_m = db.create_dataset('/%s/%s/%s' % (filterid, ccd, 'library'), shape = (Nz,lib_size, Nl), chunks = (chunk_z,lib_size,Nl), dtype = np.dtype([('m_ab', '<f4'), ('e_ab', '<f4')]) )
     db_vec.update({ccd: db_m})
 
 
@@ -146,15 +124,15 @@ for ccd in ccds:
 db.create_dataset(name = '/tables/z', data = z_range )
 
 ## 1.2 - properties
-aux_dtype = np.dtype([('tau', np.float), ('t0', np.float), ('Z', np.float), ('A_V', np.float)])
+aux_dtype = np.dtype([('tau', np.float), ('t0', np.float), ('Z', np.float), ('tau_v', np.float), ('mu', np.float)])
 prop = db.create_dataset(name = '/tables/properties', shape=(lib_size,), dtype = aux_dtype)
 n_model = 0
 
 for Z_lib in Z:
     for t_start in t0:
         for tau_eb in tau:
-            for av in av_range:
-                prop[n_model] = (tau_eb, t_start, Z_lib, av)
+            for tau_v in tau_range:
+                prop[n_model] = (tau_eb, t_start, Z_lib, tau_v, mu)
                 n_model = n_model + 1
 
 def spec2filter_z(args):
@@ -174,19 +152,17 @@ def spec2filter_z(args):
     return x
 
 from multiprocessing import Pool
-q = calc_redlaw(bt[Z == Z[0]]['l_ssp'][0], 3.1, 'CCM')
+tau_l_Y, tau_l_O = Charlot_RedLaw(bt[Z == Z[0]]['l_ssp'][0], mu = mu)
 i_model = -1
 aux_t = time.time()
-# for Z_lib in Z:
-#     print 'Z> ', Z_lib
 
 for Z_lib in Z:
     for t_start in t0:
         print 't_start> ', t_start
         for tau_eb in tau:
             print 'tau_eb> ', tau_eb
-            for av in av_range:
-                print 'av> ', av
+            for tau_v in tau_range:
+                print 'tau_v> ', tau_v
                 i_model += 1
                 print 'i_model> %i of %i' % (i_model, lib_size)
                 print 't_model>', time.time() - aux_t
@@ -198,7 +174,11 @@ for Z_lib in Z:
                 spec['wl'] = bt[bt['Z_base'] == Z_lib]['l_ssp'][0]
                 dt = (model.ages_end - model.ages_start)
                 for i in range(len(sfh)):
-                    if sfh[i] > 0: spec['flux'] = spec['flux'] + bt[bt['Z_base'] == Z_lib][i]['f_ssp'] * sfh[i] * 10**(-.4*av*q.copy()) * dt[i] / bt[i]['Mstars']  #ADDED THE MSTARS TERM!!! a ver que pasa chiquillo... :)
+                    if sfh[i] > 0:
+                        if model.ages_start[i] <= 1e7:   # We divide the evaluation of the extinction law coefficients to match Charlot&Fall 2000 method.
+                            spec['flux'] += bt[bt['Z_base'] == Z_lib][i]['f_ssp'] * sfh[i] * np.exp(-tau_v*tau_l_Y.copy()) * dt[i] / bt[i]['Mstars']
+                        else:
+                            spec['flux'] += bt[bt['Z_base'] == Z_lib][i]['f_ssp'] * sfh[i] * np.exp(-tau_v*tau_l_O.copy()) * dt[i] / bt[i]['Mstars']
                 for ccd in ccds:
                     args = []
                     for z in z_range:
