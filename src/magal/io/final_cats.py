@@ -9,6 +9,7 @@ import re
 import atpy
 import asciitable
 from atpy.asciitables import read_ascii
+import numpy as np
 
 
 def read_set(self, filename, header_max = 10000):
@@ -91,12 +92,10 @@ def read_set(self, filename, header_max = 10000):
             aux[cols[2]] = ' '.join([c for c in cols[3:]])
         except:
             pass
-    header['columns_metadata'] = aux 
-    
-    aux_columns = remove_linestart([lines[header_divs[i_header][1]-1]], start='#')[0].split()
+    header['columns_metadata'] = aux
     
     ################ DATA #####################
-    t = atpy.Table(filename, type='ascii', names=aux_columns)
+    t = atpy.Table(filename, type='ascii')
     t.table_name = 'catalog'
     self.append(t)
 #    read_ascii(self, filename, names=aux_columns)
@@ -211,8 +210,8 @@ def read_set_old(self, filename, header_max = 10000):
             aux[cols[2]] = ' '.join([c for c in cols[3:]])
         except:
             pass
-    header['columns_metadata'] = aux 
-    
+    header['columns_metadata'] = aux
+
     aux_columns = remove_linestart([lines[header_divs[i_header][1]-1]], start='#')[0].split()
     
     ################ DATA #####################
