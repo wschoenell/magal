@@ -30,7 +30,7 @@ def zcor(spec, toz, fromz=0.0):
     s = np.copy(spec)
     k = (1.+toz)/(1.+fromz)
     s['wl'] = s['wl'] * k
-    k = np.power(1./k,3)
+    k = 1./k
     s['flux'] = s['flux'] * k
     if('error' in s.dtype.names):
         s['error'] = spec['error'] * k
