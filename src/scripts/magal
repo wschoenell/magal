@@ -9,6 +9,7 @@ MAGAL -- Magnitudes Analyzer fitting program.
 
 @contact:    william@iaa.es
 '''
+import hashlib
 
 import sys
 import os
@@ -41,7 +42,14 @@ TESTRUN = 0
 PROFILE = 0
 
     
-
+def md5_for_file(f, block_size=2**20):
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        md5.update(data)
+    return md5.hexdigest()
 
 
 
@@ -111,6 +119,11 @@ USAGE
                     log.info('Using z = %s from inputfile on this simulation.' % config.getfloat('FitSimulation', 'obj_z'))
                 except NoOptionError:
                     log.info('Using z from inputfile tables.')
+                is_simulation = True
+                if is_simulation:
+                    mass_field = config.get('FitSimulation', 'mass_field')
+                else:
+                    mass_field = None
 #                 try:
 #                     log.info('Using mass from inputfile table field %s.' % config.get('FitSimulation', 'mass_field'))
 #                 except NoOptionError:
@@ -153,7 +166,15 @@ USAGE
         except KeyError:
             raise MAGALCLIError('Data not found! Are you sure that you do not want to Simulate?')
         magal_type = 'data'
-    
+
+    try:
+        Nz = config.getboolean('FitGeneral', 'Nz')
+    except NoOptionError:
+        if is_simulation:
+            Nz = False
+        else:
+            log.info('Evaluating for all Zs!')
+
     # 1.2 - Library
     lib = Library(config.get('FitGeneral', 'lib_file'))
     lib.get_filtersys(config.get('FitGeneral', 'filter_sys'), config.get('FitGeneral', 'ccd')) # libra
@@ -171,9 +192,15 @@ USAGE
         elif (args.verbose): print 'Running magal fit to ALL objects.' 
     except NoOptionError:
         if (args.verbose): print 'Running magal fit to ALL objects.'
-    
+
     N_obj = len(o_list)
-    
+
+    if is_simulation:
+        if mass_field is not None:
+            mass_field = inp.properties[mass_field][:N_obj]
+    else:
+        mass_field = None
+
     # 2 - Output file
     # 2.1 - init 
     try:
@@ -192,19 +219,27 @@ USAGE
     str_type = h5py.new_vlen(str)
     ds = f.create_dataset('/ini_file', shape=(1,), dtype=str_type)
     ds[:] = aux_ini
+
+    # and the md5sums of the inputfiles...
+    fp = open(config.get('FitGeneral', 'mag_file'), 'rb')
+    aux_md5 = 'mag_file: %s %s\n' % (config.get('FitGeneral', 'mag_file'), md5_for_file(fp))
+    fp = open(config.get('FitGeneral', 'lib_file'), 'rb')
+    aux_md5 += 'lib_file: %s %s\n' % (config.get('FitGeneral', 'lib_file'), md5_for_file(fp))
+    ds_md5sum = f.create_dataset('/md5sums', shape=(1,), dtype=str_type)
+    ds_md5sum[:] = aux_md5
     ### 
 
     # 2.3 - Data matrices
     # 2.3.1 - Shape is defined by (N_obj, N_z, N_lib)
-    if(config.getboolean('FitGeneral', 'Nz')):
+    if Nz:
         aux_shape = (N_obj, 1, lib.library.shape[1])
     else:
         aux_shape = (N_obj, lib.library.shape[0], lib.library.shape[1])
     
     # 2.3.2 - Create datasets
-    n_ds = f.create_dataset( '%s/n' % (lib.path), shape = aux_shape, dtype = np.int) # Number of used pixels on \chi2 calc
-    s_ds = f.create_dataset( '%s/s' % (lib.path), shape = aux_shape) # Scaling-factor
-    chi2_ds = f.create_dataset( '%s/chi2' % (lib.path), aux_shape) # \Chi2
+    n_ds = f.create_dataset( '%s/n' % (lib.path), shape = aux_shape, dtype = np.int, compression='gzip', compression_opts=4) # Number of used pixels on \chi2 calc
+    s_ds = f.create_dataset( '%s/s' % (lib.path), shape = aux_shape, compression='gzip', compression_opts=4) # Scaling-factor
+    chi2_ds = f.create_dataset( '%s/chi2' % (lib.path), aux_shape, compression='gzip', compression_opts=4) # \Chi2
     mod_stats_grp = f.create_group( '%s/statistics/model' % (lib.path)) # Model likelihood statistics (i.e. average, percentiles, etc..)
     lib_stats_grp = f.create_group( '%s/statistics/library' % (lib.path)) # Library likelihood statistics (i.e. average, percentiles, etc..)
     
@@ -212,7 +247,7 @@ USAGE
     
     # 3 - Fit
     
-    if config.getboolean('FitGeneral', 'Nz'):
+    if Nz:
         N_z, N_tpl = (1, lib.library.shape[1]) # If the redshift comes from inputfile, N_z = 1.
         inp_z = inp.z #properties['z']
     else:
@@ -226,12 +261,11 @@ USAGE
         filterset_mask = np.ones(len(lib.filterset), dtype=np.bool)
     
     # 3.3 - Eval \chi^2
-    Nz = config.getboolean('FitGeneral', 'Nz')
     lib_file, filter_sys, ccd  = config.get('FitGeneral', 'lib_file'), config.get('FitGeneral', 'filter_sys'), config.get('FitGeneral', 'ccd')
-    params = chi2_parameters(Nz, is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask, lib_file, filter_sys, ccd)
+    params = chi2_parameters(Nz, is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask, lib_file, filter_sys, ccd, mass_field)
     pool = multiprocessing.Pool()
     print 'started pool'
-    for result in pool.imap(chi2_wrapper, params):
+    for result in pool.map(chi2_wrapper, params):
         i_obj, aux_n, aux_s, aux_chi2 = result
         n_ds[i_obj], s_ds[i_obj], chi2_ds[i_obj] = aux_n, aux_s, aux_chi2
 #         i_obj,i_z,i_tpl, aux_chi2, aux_n, aux_s = result
@@ -244,16 +278,16 @@ USAGE
     l = np.exp( -0.5 * ( np.subtract(chi2_ds, np.min(chi2_ds, axis=2).reshape(N_obj, N_z, 1)) ) )
     # 4.2 - Normalization
     l /= np.sum(l, axis=2).reshape(N_obj, N_z, 1) #FIXME: Double sum here!
-    likelihood_ds = f.create_dataset( '%s/likelihood' % (lib.path), data = l )
+    likelihood_ds = f.create_dataset( '%s/likelihood' % (lib.path), data=l, compression='gzip', compression_opts=4)
     l_T = np.sum(l, axis=1)
     norm = np.sum(l_T, axis=1)
     l_T = np.array([l_T[i_obj] / norm[i_obj] for i_obj in range(N_obj)])
-    lT_ds = f.create_dataset( '%s/likelihood_template' % (lib.path), data = l_T )  # @UnusedVariable
+    lT_ds = f.create_dataset( '%s/likelihood_template' % (lib.path), data = l_T, compression='gzip', compression_opts=4 )  # @UnusedVariable
     if N_z > 1:
         l_z = np.sum(l, axis=2)
         norm = np.sum(l_z, axis=1)
         l_z = np.array([l_z[i_obj] / norm[i_obj] for i_obj in range(N_obj)])
-        lz_ds = f.create_dataset( '%s/likelihood_redshift' % (lib.path), data = np.array(l_z) )  # @UnusedVariable
+        lz_ds = f.create_dataset( '%s/likelihood_redshift' % (lib.path), data = np.array(l_z), compression='gzip', compression_opts=4 )  # @UnusedVariable
     
     # 5 - From likelihood, eval statistics...
     # 5.0 - Some definitions...
@@ -268,7 +302,7 @@ USAGE
     
     # 5.1.2 - Best match
     log.debug('Calculating Best Matches')
-    bmx_ds = mod_stats_grp.create_dataset('i_BMX', shape=(N_obj, 2), dtype=np.int) # Store which template is the bestmatch. [i_z, i_tpl]
+    bmx_ds = mod_stats_grp.create_dataset('i_BMX', shape=(N_obj, 2), dtype=np.int, compression='gzip', compression_opts=4) # Store which template is the bestmatch. [i_z, i_tpl]
     for i_obj in range(N_obj):
         bmx_flat = np.argmax(np.ravel(l[i_obj]))
         bmx_ds[i_obj,0] = bmx_flat / N_tpl  # i_z bmx
@@ -276,13 +310,13 @@ USAGE
     
     # 5.1.3 - Percentiles
     log.debug('Calculating Mass percentiles')
-    p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt) # Percentiles dataset 
+    p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt, compression='gzip', compression_opts=4) # Percentiles dataset
     for i_obj in range(N_obj):
         p_ds[i_obj] = tuple(percentiles(np.ravel(s_Mass[i_obj]), np.ravel(likelihood_ds[i_obj]), perc)) 
         
     # 5.1.4 - Average
     log.debug('Calculating Mass average')
-    p_ds = p_grp.create_dataset('AVG', shape=(N_obj,))
+    p_ds = p_grp.create_dataset('AVG', shape=(N_obj,), compression='gzip', compression_opts=4)
     for i_obj in range(N_obj): p_ds[i_obj] = np.sum(s_Mass[i_obj] * likelihood_ds[i_obj])
     
     # 5.2 - Library properties statistics
@@ -292,18 +326,18 @@ USAGE
             
             # 5.2.2 - Percentiles
             log.debug('Calculating property %s percentiles' % prop)
-            p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt) # Percentiles dataset
+            p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt, compression='gzip', compression_opts=4) # Percentiles dataset
             for i_obj in range(N_obj):
                 p_ds[i_obj] = tuple(percentiles(lib.properties[prop], l_T[i_obj], perc))
                 
             # 5.2.3 - Average
             log.debug('Calculating property %s average' % prop)
-            p_grp.create_dataset('AVG', data = np.sum(l_T * lib.properties[prop], axis=1) / np.sum(l_T, axis=1))
+            p_grp.create_dataset('AVG', data = np.sum(l_T * lib.properties[prop], axis=1) / np.sum(l_T, axis=1), compression='gzip', compression_opts=4)
             
             # 5.2.4 - -999 probability (or NaN)
             if np.isnan(lib.properties[prop]).sum() > 0: # Will do this only if library property have NaNs.
                 log.debug('Calculating property %s NaN probability' % prop)
-                p_grp.create_dataset('pNaN', aux_shape) #TODO: Add data to NaN properties.
+                p_grp.create_dataset('pNaN', aux_shape, compression='gzip', compression_opts=4) #TODO: Add data to NaN properties.
 
     f.close()
     
