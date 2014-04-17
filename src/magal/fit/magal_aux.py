@@ -11,7 +11,10 @@ from magal.io.readlibrary import Library
 
 def chi2_wrapper(p):
 #     i_obj,i_z,i_tpl, o, m, w = p
-    i_obj, obj, filterset_mask, N_tpl, N_z, inp_z, is_simulation, Nz, lib_file, filter_sys, ccd = p
+    i_obj, obj, filterset_mask, N_tpl, N_z, inp_z, is_simulation, Nz, lib_file, filter_sys, ccd, mass_field = p
+    
+    if i_obj % 10 == 0:
+        print 'i_obj: %i' % i_obj
     
     # 1.2 - Library
     lib = Library(lib_file) #config.get('FitGeneral', 'lib_file'))
@@ -29,18 +32,21 @@ def chi2_wrapper(p):
         for i_tpl in range(N_tpl):
         # 3.2 - If this is a simulation, use 1% of magnitude as error.
             if (is_simulation):
-                w = 1 / (obj['e_ab'][filterset_mask] + np.random.normal(size=len(obj['m_ab'][filterset_mask]), scale=0.05)) #TODO: Put a more realistic error component.
+                w = 1 / (obj['e_ab'][filterset_mask] + 0.05) #TODO: Put a more realistic error component.
             else:
                 w = 1 / obj['e_ab'][filterset_mask]
-                
-            aux_n[i_z, i_tpl], aux_s[i_z, i_tpl], aux_chi2[i_z, i_tpl] = chi2(obj['m_ab'][filterset_mask], a[i_tpl]['m_ab'][filterset_mask], w)
+
+            if is_simulation and mass_field is not None:
+                aux_n[i_z, i_tpl], aux_s[i_z, i_tpl], aux_chi2[i_z, i_tpl] = chi2(obj['m_ab'][filterset_mask] - 2.5 * mass_field[i_obj], a[i_tpl]['m_ab'][filterset_mask], w)
+            else:
+                aux_n[i_z, i_tpl], aux_s[i_z, i_tpl], aux_chi2[i_z, i_tpl] = chi2(obj['m_ab'][filterset_mask], a[i_tpl]['m_ab'][filterset_mask], w)
 
     return i_obj, aux_n, aux_s, aux_chi2
 
-def chi2_parameters(Nz, is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask, lib_file, filter_sys, ccd, e_a_veia_a_fiar=None):
+def chi2_parameters(Nz, is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask, lib_file, filter_sys, ccd, mass_field, e_a_veia_a_fiar=None):
     for i_obj in range(N_obj):
         obj = o_list[i_obj]
-        yield i_obj, obj, filterset_mask, N_tpl, N_z, inp_z, is_simulation, Nz, lib_file, filter_sys, ccd
+        yield i_obj, obj, filterset_mask, N_tpl, N_z, inp_z, is_simulation, Nz, lib_file, filter_sys, ccd, mass_field
 
     
 #                 n_ds[i_obj,i_z,i_tpl], s_ds[i_obj,i_z,i_tpl], chi2_ds[i_obj,i_z,i_tpl] = chi2(obj['m_ab'][filterset_mask], a[i_tpl]['m_ab'][filterset_mask], w)
