@@ -49,6 +49,24 @@ input_icols.extend([columns[key][1] for key in filter_ids])
 
 input_icols = input_icols - np.ones_like(input_icols)
 
+# -- Galactic extinction correction.
+# TODO: implement the option to use ra,dec or l,b and Schlegel maps of obstools.
+try:
+    extinction = ast.literal_eval(config.get('InputMagnitudes', 'extinction'))
+    extinction_dt = [(key, np.float) for key in extinction.keys()]
+    extinction_icols = [extinction[key] for key in extinction.keys()]
+    extinction_icols = extinction_icols - np.ones_like(extinction_icols)
+    if extinction.keys() != columns.keys():
+        raise 'Extinction and data columns are different!'
+except NoOptionError:
+    extinction = False
+    print 'The input file does not have Galactic extinction correction to the magnitudes.'
+
+try:
+    catalog_delimiter = ast.literal_eval(config.get('InputMagnitudes', 'delimiter'))
+except:
+    catalog_delimiter = None
+
 # - Properties
 properties_icols = [int(config.get('InputProperties', 'unique_id_column'))] # First column is always the unique identificator.
 properties_dt = [('_id', np.int64)] # Unique id always haves _id name
@@ -66,7 +84,8 @@ try:
 except NoOptionError:
     print 'The input file does not have any flag associated.'
 
-properties_icols = properties_icols - np.ones_like(properties_icols) 
+properties_icols = properties_icols - np.ones_like(properties_icols)
+
 
 # - Check if the columns of the input file are the same as on filter file.
 filters_filterfile = np.sort(np.unique(Filter.filterset['ID_filter']))
@@ -96,6 +115,13 @@ Nfilters = len(filters_filterfile)
 
 db = h5py.File(config.get('InputGeneral', 'output_file'), 'w')
 
+
+## Write full .ini file on inputfile.
+#aux_ini = open(sys.argv[1], 'r').read()
+#str_type = h5py.new_vlen(str)
+#ds = db.create_dataset('/ini_file', shape=(1,), dtype=str_type)
+#ds[:] = aux_ini
+
 ###
 ###  3 - Open ascii tables and read the data
 ###
@@ -108,8 +134,12 @@ for name in catalog_fnames:
     aux_fname = '%s/%s' % (ast.literal_eval(config.get('InputMagnitudes', 'path_files')),
                            name)
     ccd = ast.literal_eval(config.get('InputMagnitudes', 'ccds')+',')[i_cat]
-    mag_data = np.loadtxt(aux_fname, dtype=input_dt, usecols=input_icols)
-    prop_data = np.loadtxt(aux_fname, dtype=properties_dt, usecols=properties_icols)
+    mag_data = np.loadtxt(aux_fname, dtype=input_dt, usecols=input_icols, delimiter=catalog_delimiter)
+    if extinction:
+        extinction_data = np.loadtxt(aux_fname, dtype=extinction_dt, usecols=extinction_icols, delimiter=catalog_delimiter)
+        for key in extinction.keys():
+            mag_data[key] = mag_data[key] - extinction_data[key]
+    prop_data = np.loadtxt(aux_fname, dtype=properties_dt, usecols=properties_icols, delimiter=catalog_delimiter)
 
     Ngal = len(mag_data)
     
@@ -119,12 +149,14 @@ for name in catalog_fnames:
     
     try:
         z_col = ast.literal_eval(config.get('InputProperties', 'redshift'))
+        z_col[z_col.keys()[0]] = z_col[z_col.keys()[0]] - 1
     except:
         z_col = False
         
     if z_col:
         z_col = z_col.values()[0]
-        redshift_data = np.loadtxt(aux_fname, dtype=np.float, usecols=(z_col,))
+        redshift_data = np.loadtxt(aux_fname, dtype=np.float, usecols=(z_col,), delimiter=catalog_delimiter)
+        print 'debug>', redshift_data.shape
         db_redshift = db.get('/%s/%s/tables/z' % (config.get('InputGeneral', 'filter_name'), ccd))
         if db_redshift is None:
             db_redshift = db.create_dataset(name = '/%s/%s/tables/z' % ((config.get('InputGeneral', 'filter_name'), ccd)),
@@ -133,6 +165,7 @@ for name in catalog_fnames:
                                   chunks = True,
                                   maxshape = (None,) )
         else:
+            db_redshift.resize((NgalCum[ccd]+Ngal,))
             db_redshift[NgalCum[ccd]:NgalCum[ccd]+Ngal] = redshift_data            
         
         
@@ -161,7 +194,7 @@ for name in catalog_fnames:
         db_data = db.create_dataset(name = '/%s/%s/data' % ((config.get('InputGeneral', 'filter_name'), ccd)),
                                     shape = (Ngal,Nfilters),
                                     dtype = np.dtype([('m_ab', np.float), ('e_ab', np.float)]),
-                                    chunks = True,
+                                    chunks = (1,5),
                                     maxshape = (None, Nfilters) )
         NgalCum[ccd] = 0
     else:
