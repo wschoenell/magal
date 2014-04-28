@@ -4,3 +4,7 @@
 .settings/
 *.profile
 *.hdf5
+.idea/
+.project
+.pydevproject
+.externalToolBuilders/
