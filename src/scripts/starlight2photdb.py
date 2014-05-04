@@ -17,6 +17,7 @@ import h5py
 import numpy as np
 
 import atpy
+from numpy.ma import mrecords
 import pystarlight.io.starlighttable
 import cosmocalc
 
@@ -81,11 +82,11 @@ if __name__ == '__main__':
     aux = np.loadtxt(args.i[0], dtype = np.str).T
     infiles = aux[0]
     outfiles = aux[1]
-    el_file = '%s/sample.F%s.%s.f.lines.dat.BS.bz2' % (tables_dir, args.d[0], args.sa[0]) 
-    syn01_file = '%s/sample.F%s.%s.f.Starlight.SYN01.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0]) 
-    syn02_file = '%s/sample.F%s.%s.f.Starlight.SYN02.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0]) 
-    syn03_file = '%s/sample.F%s.%s.f.Starlight.SYN03.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0]) 
-    syn04_file = '%s/sample.F%s.%s.f.Starlight.SYN04.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0]) 
+    el_file = '%s/sample.F%s.%s.f.lines.dat.BS.bz2' % (tables_dir, args.d[0], args.sa[0])
+    syn01_file = '%s/sample.F%s.%s.f.Starlight.SYN01.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0])
+    syn02_file = '%s/sample.F%s.%s.f.Starlight.SYN02.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0])
+    syn03_file = '%s/sample.F%s.%s.f.Starlight.SYN03.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0])
+    syn04_file = '%s/sample.F%s.%s.f.Starlight.SYN04.tab.BS.bz2' % (tables_dir, args.d[0], args.sa[0])
     db_file = args.o[0]
     filter_file = args.f[0]
     filterid = os.path.basename(filter_file).split('.')[0]
@@ -144,7 +145,13 @@ if __name__ == '__main__':
         
     # 2 - Write tables to hdf5 file
     log.debug('\tTables...')
-    db.create_dataset(name = '/tables/properties', data=tb[id_list])
+    properties = tb[id_list].copy()
+    data = np.ma.array(properties.copy(),
+                       mask=[tuple(np.append(False, np.less(list(p_)[1:], -998))) for p_ in properties],
+                       fill_value=np.nan)
+    # r = data.view(mrecords.mrecarray)
+    ds_tb = db.create_dataset(name = '/tables/properties', data=data.filled())
+
     db.create_dataset(name = '/tables/z', data = np.arange(z_from, z_to, z_step) )
 
     
@@ -173,46 +180,47 @@ if __name__ == '__main__':
     
     # To convert units to L\odot / M\odot \AA:
     aux_units = (4 * np.pi * np.power(tsyn04['DL_Mpc'][id_list] * Mpc_cm,2)) / (np.power(10,tsyn04['Mini_fib'][id_list]) * L_sun)
-    
+
     for i_file in range(Ngal):
         # Read starlight output
-        model_file = '%s/%s' % (out_dir, outfiles[i_file]) 
+        model_file = '%s/%s' % (out_dir, outfiles[i_file])
         tm = atpy.TableSet(model_file, type='starlightv4')
         model_spec = np.copy(tm.spectra.data.view(dtype = np.dtype([('wl', tm.spectra.l_obs.dtype), ('f_obs', '<f8'), ('flux', tm.spectra.f_syn.dtype), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')])))
         #     and input..
         obs_file = '%s/%s' % (in_dir, infiles[i_file])
         ts = atpy.TableSet(obs_file, type='starlight_input')
         obs_spec = np.copy(ts.starlight_input.data.view(dtype = np.dtype([('wl', '<f8'), ('flux', '<f8'), ('error', '<f8'), ('flag', '<i8')])))
-    
+
         model_spec['flux'] = model_spec['flux'] * tm.keywords['fobs_norm'] * 1e-17 * aux_units[i_file]
         obs_spec['flux'] = obs_spec['flux'] * 1e-17 * aux_units[i_file]
         obs_spec['error'] = obs_spec['error'] * 1e-17 * aux_units[i_file]
-        
+
         for ccd in db_f.get(filterid).keys():
             # Get the filterid filter.
             f.read(filter_file, path='/%s/%s' % (filterid, ccd))
-            
+
             # For each defined redshift, eval the photometry and store on the database.
             db_m = db.get('/%s/%s/%s' % (filterid, ccd, 'library'))
             i_z = 0
             for z in np.arange(z_from, z_to, z_step):
-                
+
                 if z == 0:
                     d_L = 3.08567758e19 # 10 parsec in cm
                 else:
                     d_L = cosmocalc.cosmocalc(z)['DL_cm']
-                    
-                k_cosmo = L_sun  / ( 4 * np.pi * np.power(d_L,2) ) 
+
+                k_cosmo = L_sun  / ( 4 * np.pi * np.power(d_L,2) )
 
                 O = zcor(obs_spec, z)
                 O['flux'] = O['flux'] * k_cosmo
                 O['error'] = O['error'] * k_cosmo
-                
+
                 M = zcor(model_spec, z)
                 M['flux'] = M['flux'] * k_cosmo
 
-                x = spec2filterset(f.filterset, O, M) 
-                
+                print 'i_file', i_file
+                x = spec2filterset(f.filterset, O, M)
+
                 db_m[i_z, i_file] = x
                 i_z = i_z + 1
             
