@@ -320,24 +320,37 @@ USAGE
     for i_obj in range(N_obj): p_ds[i_obj] = np.sum(s_Mass[i_obj] * likelihood_ds[i_obj])
     
     # 5.2 - Library properties statistics
-    for prop in lib.properties.dtype.names:
-        if lib.properties.dtype[prop].kind == 'f': # Do statistics only for float properties. 
-            p_grp = lib_stats_grp.create_group(prop) # Create a group for each prop
+    for p_ in lib.properties.dtype.names:
+        if lib.properties.dtype[p_].kind == 'f':  # Do statistics only for float properties.
+            p_grp = lib_stats_grp.create_group(p_)  # Create a group for each prop
+
+            # 5.2.1 - Check if property have NaN invalid elements.
+            are_nan = np.isnan(lib.properties[p_])
+            not_nan = np.invert(are_nan)
+            if are_nan.sum() > 0:
+                p_isnan = True
+                prop = np.ma.masked_array(lib.properties[p_], mask=are_nan)
+            else:
+                p_isnan = False
+                prop = np.ma.masked_array(lib.properties[p_], mask=np.zeros_like(lib.properties[p_], dtype=np.bool))
             
             # 5.2.2 - Percentiles
-            log.debug('Calculating property %s percentiles' % prop)
-            p_ds = p_grp.create_dataset('percentiles', shape=(N_obj,), dtype=perc_dt, compression='gzip', compression_opts=4) # Percentiles dataset
-            for i_obj in range(N_obj):
-                p_ds[i_obj] = tuple(percentiles(lib.properties[prop], l_T[i_obj], perc))
+            log.debug('Calculating property %s percentiles' % p_)
+            p_grp.create_dataset('percentiles', data=np.array(
+                [tuple(percentiles(prop.compressed(), l_T[i][not_nan], perc)) for i in range(N_obj)], dtype=perc_dt),
+                                 compression='gzip', compression_opts=4)  # Percentiles dataset
                 
             # 5.2.3 - Average
-            log.debug('Calculating property %s average' % prop)
-            p_grp.create_dataset('AVG', data = np.sum(l_T * lib.properties[prop], axis=1) / np.sum(l_T, axis=1), compression='gzip', compression_opts=4)
+            log.debug('Calculating property %s average' % p_)
+            p_grp.create_dataset('AVG',
+                                 data=np.sum(l_T * prop, axis=1) / np.sum(l_T[:, not_nan], axis=1),
+                                 compression='gzip', compression_opts=4)  #TODO: Test NaN
             
             # 5.2.4 - -999 probability (or NaN)
-            if np.isnan(lib.properties[prop]).sum() > 0: # Will do this only if library property have NaNs.
+            if p_isnan:  # Will do this only if library property have NaNs.
                 log.debug('Calculating property %s NaN probability' % prop)
-                p_grp.create_dataset('pNaN', aux_shape, compression='gzip', compression_opts=4) #TODO: Add data to NaN properties.
+                p_grp.create_dataset('pNaN', data=np.sum(l_T[:, are_nan], axis=1), compression='gzip',
+                                     compression_opts=4)
 
     f.close()
     
