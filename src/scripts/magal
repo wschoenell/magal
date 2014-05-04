@@ -103,6 +103,21 @@ USAGE
         filter_sys = config.get('FitGeneral', 'filter_sys')  # Filtersystem (e.g. SDSS)
         ccd = config.get('FitGeneral', 'ccd')  # CCD number
 
+        #If allow_overwrite is defined, we can overwrite the outputfile.
+        try:
+            allow_overwrite = config.getboolean('FitSimulation', 'allow_overwrite')
+        except NoOptionError:
+            allow_overwrite = False
+        #Check if outputfile exists and act as defined by config.
+        if os.path.exists(output_file):
+            if allow_overwrite:
+                try:
+                    os.unlink(output_file)
+                except:
+                    raise MAGALCLIError(u'Cannot DELETE file {0:s}.'.format(output_file))
+            else:
+                raise MAGALCLIError(u'File {0:s} already exists.'.format(output_file))
+
         # Look if there is a filter list to include.
         try:
             filters_include = ast.literal_eval(config.get('FitGeneral', 'filters_include'))
