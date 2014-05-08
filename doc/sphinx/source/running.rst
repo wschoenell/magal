@@ -26,25 +26,50 @@ called makeMagalLibrary.py. To run it, simply do:
 
 .. sourcecode:: ini
 
-	[InputGeneral]
-	filter_file: /Users/william/doutorado/photo_filters/Alhambra_24.hdf5
-	filter_name: Alhambra_24
-	output_file: magal_input_test.hdf5
+    [InputGeneral]
+    filter_file: /Users/william/doutorado/photo_filters/Alhambra_24.hdf5
+    filter_name: Alhambra_24
+    output_file: magal_input_test.hdf5
 
-	[InputMagnitudes]
-	path_files: '/Users/william/doutorado/Alhambra/catalogs/00_last'
-	cat_files: 'alhambra_f02p01c01.ColorProBPZ.Prior1Peak.cat','alhambra_f02p01c02.ColorProBPZ.Prior1Peak.cat'
-	ccds: 1,2
-	columns: { 'F_365': [17, 18],
-			   'F_396': [19, 20]}
+    [InputMagnitudes]
+    path_files: '/Users/william/doutorado/Alhambra/catalogs/00_last'
+    cat_files: 'alhambra_f02p01c01.ColorProBPZ.Prior1Peak.cat','alhambra_f02p01c02.ColorProBPZ.Prior1Peak.cat'
+    ccds: 1,2
+    columns: { 'F_365': [17, 18],
+               'F_396': [19, 20]}
 
-	[InputProperties]
-	unique_id_column: 1
+    [InputProperties]
+    unique_id_column: 1
 
-	redshift: {'zb_1': 73}
+    redshift: {'zb_1': 73}
 
-	flags: { 'photoflag': 16,
-			 'Satur_Flag': 71}
+    flags: { 'photoflag': 16,
+             'Satur_Flag': 71}
 
-	general: { 'ra': 2,
-			   'dec': 3}
+    general: { 'ra': 2,
+    		   'dec': 3}
+
+
+Running MagAl Fit
+-----------------
+
+
+``magal config_file.ini``
+
+.. sourcecode:: ini
+
+    [FitGeneral]
+    mag_file = /Users/william/Downloads/databases/database_OB_Alhambra_24.hdf5
+    lib_file = /Users/william/Downloads/databases/database_BA_Alhambra_24.hdf5
+    filter_sys = Alhambra_24
+    ccd = 1
+    output_file = /Users/william/Downloads/tmp_out/magal_simulation_Alhambra_24.hdf5
+    Nobj_max = 5
+    ; Nz = True ; Evaluate at z = const. Redshift will be get from inputfile property z.
+    ;filter_include = ; us,gs,rs,is
+    ;filter_exclude = ; us,gs,rs,is
+
+    [FitSimulation]
+    is_simulation = True  ; Will skip this Section if False.
+    obj_z = 0.001 ; Redshift to get on the inputfile library
+    mass_field = Mcor_gal ; Field corresponding to the log10(Mass) on inputfile properties table of the mag_file

@@ -7,26 +7,46 @@ Created on Feb 23, 2012
 import os
 import numpy as np
 import h5py
-import atpy
+
 
 class FilterSet(object):
-    '''
-    This class reads a filterset from file and returns a "filter" object.
-    '''
-    
-    def __init__(self):
-        pass
-    
-    def read(self, filterfile, path=None):  
+    """
+    This class reads a filterset file from file and returns a "filter" object.
+    """
+
+    def __init__(self, filterfile):
         '''
-        Read filterfile
-        
+        Initialize a FilterSet object given a filterfile.
+
         Parameters
         ----------
         filterfile : string
-                     Filter filename
-        path : string, optional
-               Path to the filterset in the filterfile (only used to .hdf5 tables)
+            Path to the filter file.
+
+        '''
+        if not os.path.exists(filterfile):
+            raise Exception('File not found: %s' % filterfile)
+
+        if filterfile.endswith('.hdf5'):
+            self._db_f = h5py.File(filterfile, 'r')
+            self.filtersets = {}
+            for f_ in self._db_f.keys():
+                self.filtersets[f_] = [ccd for ccd in self._db_f[f_]]
+        else:
+            raise Exception('Unsupported filterfile.')
+
+
+    def load(self, filterset_id, ccd):
+        """
+        Loads into ``self.filterset`` the ``filterset_id``
+        
+        Parameters
+        ----------
+        filterset_id : string
+            Filterset identificator on filterfile. e.g.: ``sdss``
+
+        ccd : string
+            Identificator of which CCD should we load.
         
         Examples
         --------
@@ -36,40 +56,33 @@ class FilterSet(object):
         
         Notes
         -----
-        '''
-        
-        if not os.path.exists(filterfile):
-            raise Exception('File not found: %s' % filterfile)
-    
-        if filterfile.endswith('.hdf5'):
-            db_f = h5py.File(filterfile, 'r')
-            aux_db = db_f.get(path)
-            
-            for filter_id in aux_db.keys():
-                aux_filter = db_f.get('%s/%s' % (path, filter_id))
-                aux_fid = [filter_id for i in range(len(aux_filter))]
-                aux = atpy.Table()
-                aux.add_column(name = 'ID_filter', data = aux_fid, dtype='S20')
-                aux.add_column(name = 'wl', data = aux_filter['wl'])
-                aux.add_column(name = 'transm', data = aux_filter['transm'])
-                if filter_id == aux_db.keys()[0]:
-                    self.filterset = aux.data
-                else:
-                    self.filterset = np.append(self.filterset, np.array(aux.data, dtype=self.filterset.dtype))
-                
-        elif filterfile.endswith('.filter'):
-            dt = np.dtype ([('ID_filter', 'S20'), ('wl', 'f'), ('transm', 'f')])
-            self.filterset = np.loadtxt(filterfile, dtype=dt)
-              
-    def uniform(self, dl=1):
-        '''
-        Interpolates filter curves to match a specific uniform lambda coverage.
-        
+        """
+        aux = self._db_f.get('/%s/%s' % (filterset_id, ccd))
+        shape = sum([aux[m].len() for m in aux.keys()])
+        self.filterset = np.empty(shape, dtype=np.dtype([('ID_filter', 'S32'), ('wl', np.float), ('transm', np.float)]))
+        i = 0
+        for id_filter in aux.keys():
+            i_last = i + aux[id_filter].len()
+            self.filterset['ID_filter'][i:i_last] = id_filter
+            self.filterset['wl'][i:i_last] = aux[id_filter]['wl']
+            self.filterset['transm'][i:i_last] = aux[id_filter]['transm']
+            i = i_last
+
+    @property
+    def filterset_uniform(self, dl=1):
+        """
+        Modifies filter curves to match a specific uniform lambda coverage.
+
         Parameters
-        ----------    
-        dl: float
+        ----------
+        dl: float, optional
             Delta lambda spacing in Angstroms. (Default: 1 :math`\AA`)
-        '''
+
+        Returns
+        -------
+        filterset : array
+            Interpolated filterset. Haves the same shape and dtype of ``FilterSet.filterset``
+        """
         aux = []
         for fid in np.unique(self.filterset['ID_filter']):
             xx = self.filterset[self.filterset['ID_filter'] == fid]
@@ -77,14 +90,20 @@ class FilterSet(object):
             new_transm = np.interp(new_lambda, xx['wl'], xx['transm'])
             for i in range(len(new_lambda)):
                 aux.append((fid, new_lambda[i], new_transm[i]))
-        self.filterset = np.array(aux, dtype = self.filterset.dtype)
-            
-        
-    def calc_filteravgwls(self):
+        return np.array(aux, dtype=self.filterset.dtype)
+
+    @property
+    def filter_wls(self):
         '''
-        Calculate the mean wave length of each filter (useful for plotting).
+        Calculate the mean wave length of each filter. Useful for plotting.
         '''
-        avg = []
-        for fid in np.unique(self.filterset['ID_filter']):
-            avg.append(np.average(self.filterset[self.filterset['ID_filter'] == fid]['wl']))
-        self.filteravgwls = np.array(avg)
+        try:
+            aux_names = np.unique(self.filterset['ID_filter'])
+            dt = np.dtype([('ID_filter', 'S32'), ('wl_central', np.float)])
+            aux_ret = np.array(
+                [(fid, np.average(self.filterset[self.filterset['ID_filter'] == fid]['wl'])) for fid in aux_names],
+                dtype=dt)
+        except AttributeError:
+            raise Exception('You have to load the filtersystem/CCD first!')
+
+        return np.array(aux_ret)

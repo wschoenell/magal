@@ -13,6 +13,7 @@ Contents:
    
    introduction
    installation
+   libraries
    running
    examples
    api
