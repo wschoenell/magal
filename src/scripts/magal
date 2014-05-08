@@ -105,7 +105,7 @@ USAGE
 
         #If allow_overwrite is defined, we can overwrite the outputfile.
         try:
-            allow_overwrite = config.getboolean('FitSimulation', 'allow_overwrite')
+            allow_overwrite = config.getboolean('FitGeneral', 'allow_overwrite')
         except NoOptionError:
             allow_overwrite = False
         #Check if outputfile exists and act as defined by config.
@@ -114,9 +114,11 @@ USAGE
                 try:
                     os.unlink(output_file)
                 except:
-                    raise MAGALCLIError(u'Cannot DELETE file {0:s}.'.format(output_file))
+                    print u'Cannot DELETE file {0:s}.'.format(output_file)
+                    return 1
             else:
-                raise MAGALCLIError(u'File {0:s} already exists.'.format(output_file))
+                print u'File {0:s} already exists.'.format(output_file)
+                return 1
 
         # Look if there is a filter list to include.
         try:
