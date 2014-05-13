@@ -215,7 +215,7 @@ USAGE
     # 2 - Output file
     # 2.1 - init 
     try:
-        f = h5py.File(output_file, mode='w-', driver='core')
+        f = h5py.File(output_file, mode='w-')
     except IOError:
         raise MAGALCLIError(u'File {0:s} already exists or could not be created.'.format(output_file))
 
