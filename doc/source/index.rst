@@ -13,10 +13,18 @@ Contents:
    
    introduction
    installation
-   libraries
    running
-   examples
+   filtersets
+   libraries
+   input
+   fit
+   structure
+   license
+
+..   plotting
    api
+   examples
+
 
 
 Indices and tables

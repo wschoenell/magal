@@ -54,15 +54,15 @@ def percentiles(x, y, perc):
         Properties values.
 
     y : array_like
-        Array where percentiles are calculated on.
+        Array where percentiles are calculated on (weight).
 
     perc : float in range of [0,100] (or sequence of floats)
-           Percentile to compute which must be between 0 and 100 inclusive.
+        Percentile to compute which must be between 0 and 100 inclusive.
 
     Returns
     -------
-    percentiles : float, ndarray #FIXME:
-                  The interpolated values, same shape as ``perc``.
+    percentiles : ndarray
+        The interpolated values, same shape as ``perc``.
 
     See Also
     --------

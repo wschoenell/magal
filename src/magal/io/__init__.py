@@ -14,7 +14,7 @@
 
 from distutils.version import LooseVersion
 from atpy import __version__ as atpy_version
-#from magal.io.alhambra import read_ambcat
+# from magal.io.alhambra import read_ambcat
 from magal.io.final_cats import read_set
 
 if LooseVersion(atpy_version) >= LooseVersion('0.9.6'):
@@ -24,5 +24,5 @@ else:
     from atpy import register_set_reader #@UnresolvedImport @Reimport
     from atpy import register_reader #@UnresolvedImport @Reimport
 
-#register_set_reader('alhambra_catalog', read_ambcat)
+# register_set_reader('alhambra_catalog', read_ambcat)
 register_set_reader('alhambra_catalog', read_set)

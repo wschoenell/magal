@@ -20,7 +20,7 @@ Created on Feb 23, 2012
 
 # metadata definition used by setup.py and others
 
-_magal_version_          = "0.1"
+_magal_version_          = "0.0.1"
 _magal_name_             = "magal"
 _magal_requires_         = ""
 _magal_provides_         = "magal-core"
