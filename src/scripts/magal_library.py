@@ -1,26 +1,25 @@
-from __future__ import division
-from magal.core.library import LibraryModel
-
-'''
+"""
 Created on May 06, 2014
 
 @author: william
 
     This script creates different libraries templates.
-'''
+"""
 
-import time
+from __future__ import division
+from astropy import units
+from magal.library import LibraryModel
+
 import ConfigParser
 from ConfigParser import NoOptionError
 
 import numpy as np
 
-from magal.io.hdf5util import inithdf5, read_filterhdf5
+from magal.io.hdf5util import inithdf5
 from magal.io.readfilterset import FilterSet
 
 from astropy.cosmology import WMAP9 as cosmo
 
-from pystarlight.util.constants import L_sun
 from magal.util.cosmo import zcor
 from magal.photometry.syntphot import spec2filterset
 import os
@@ -38,17 +37,25 @@ setConsoleLevel(logging.CRITICAL)
 
 def spec2filter_z(args):  #FIXME: Move this to somewhere else
     spec, ccd_filter, z = args
+    n_spec = np.shape(spec)[0]
+
     if z == 0:
         d_L = 3.08567758e19  # 10 parsec in cm
     else:
         d_L = cosmo.comoving_distance(z).to('cm')
+    k_cosmo = units.Lsun.to('erg/s') / (4 * np.pi * np.power(d_L, 2))
 
-    k_cosmo = L_sun / ( 4 * np.pi * np.power(d_L, 2) )
-
-    O = zcor(spec, z)
-    O['flux'] = O['flux'] * k_cosmo
-
-    x = spec2filterset(ccd_filter, O)
+    if n_spec == 1:  # If there is only model.
+        model_spec = zcor(spec[0], z)
+        model_spec['flux'] = model_spec['flux'] * k_cosmo
+        x = spec2filterset(ccd_filter, model_spec)
+    elif n_spec == 2:
+        obs_spec = zcor(spec[0], z)
+        obs_spec['flux'] = obs_spec['flux'] * k_cosmo
+        obs_spec['error'] = obs_spec['error'] * k_cosmo
+        model_spec = zcor(spec[1], z)
+        model_spec['flux'] = model_spec['flux'] * k_cosmo
+        x = spec2filterset(ccd_filter, obs_spec, model_spec)
 
     return x
 
@@ -97,11 +104,19 @@ if library_type == 'two_exp':
         lambda_norm = config.getfloat('LibraryParameters', 'lambda_norm')  # mass normalization wl
     except NoOptionError:
         lambda_norm = 4020
+    LibModel = LibraryModel(library_type, inp_file, basedir, basefile, fraction_type, lambda_norm)  # Init
+# 2 - STARLIGHT library parameters:
+elif library_type == 'starlight_sdss':
+    type = 'starlight_sdss'
+    inp_file = os.path.expandvars(config.get('LibraryParameters', 'input_file'))
+    tables_dir = os.path.expandvars(config.get('LibraryParameters', 'tables_dir'))
+    input_dir = os.path.expandvars(config.get('LibraryParameters', 'input_dir'))
+    output_dir = os.path.expandvars(config.get('LibraryParameters', 'output_dir'))
+    LibModel = LibraryModel(type, inp_file, tables_dir, input_dir, output_dir)
 
 #### -- ####
 
 # 0 - Library Parameters
-LibModel = LibraryModel(library_type, inp_file, basedir, basefile, fraction_type, lambda_norm)  # Init
 z_range = np.arange(z_from, z_to, z_step)
 Nz = len(z_range)
 
@@ -143,15 +158,19 @@ prop = db.create_dataset(name='/tables/properties', data=LibModel.input_data)
 
 # 2 - RUN!
 for i_model in range(LibModel.lib_size):
-    model_spec = LibModel.get_model_spectrum(i_model)
+    if i_model % 100 == 0:
+        print 'Running i_model: %i' % i_model
     for ccd in f.filtersets[filter_id]:
         args = []
+        spec = LibModel.get_model_spectrum(i_model)
         for z in z_range:
-            args.append((model_spec, ccd_vec[ccd], z))
+            args.append((spec, ccd_vec[ccd], z))
         pool = Pool()
         result = pool.map(spec2filter_z, args)
         pool.close()
         pool.join()
         db_vec[ccd][:, i_model, :] = result
+
+print 'Finished calculating magnintudes.'
 
 db.close()
