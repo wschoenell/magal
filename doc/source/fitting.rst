@@ -1,5 +1,5 @@
-Running MagAl
-=============
+Fitting
+=======
 
 To run MagAl, you will need three files:
 

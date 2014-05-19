@@ -19,8 +19,8 @@ import sys
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('sphinxext'))
-sys.path.insert(0, os.path.abspath('../../../src/'))
-sys.path.insert(0, os.path.abspath('../../../../pystarlight/src'))
+sys.path.insert(0, os.path.abspath('../../src/'))
+sys.path.insert(0, os.path.abspath('../../../pystarlight/src'))
 
 # -- General configuration -----------------------------------------------------
 

@@ -3,32 +3,54 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to magal's documentation!
-================================
+MagAl - The magnitudes Analyzer
+-------------------------------
 
-Contents:
+.. rst-class:: align-right
+
+  *I wanna see her smiling, I wanna see her singing!*
+
+
+
+Who it works?
+^^^^^^^^^^^^^
+
+How MagAl works? Which public? whatever...
+
+.. image:: magal.png
+
+
+Contents
+^^^^^^^^
 
 .. toctree::
    :maxdepth: 2
-   
-   introduction
+
    installation
-   running
    filtersets
    libraries
    input
-   fit
-   structure
+   fitting
+   plotting
+   examples
    license
 
-..   plotting
+Developer information
+^^^^^^^^^^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 1
+
+   structure
    api
+
+
+..   plotting
    examples
 
 
 
 Indices and tables
-==================
+^^^^^^^^^^^^^^^^^^
 
 * :ref:`genindex`
 * :ref:`modindex`

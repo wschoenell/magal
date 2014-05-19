@@ -12,12 +12,16 @@ Section : ``[LibraryGeneral]``
 * ``filter_file`` : string. MagAl Filter transmission curves input file.
 * ``filterset`` : string. Specifies which filter inside the filter_file will
   you use to create the library.
-* ``library_type`` : string. Library type. Allowed types are: ``two_exp``, ...
+* ``library_type`` : string. Library type. Allowed types are: ``two_exp`` and
+  ``starlight_sdss``
 * ``z_from`` : float. Minimum redshift on the library.
 * ``z_to`` : float. Maximum redshift on the library.
 * ``z_step`` : float. Delta-z of the library redshift binning.
-* ``allow_overwrite`` : bool. Optional. Default: False. If true, allow ovewriting output files.
-* ``comsmology`` : ??. Optional. Default: ??? . Example
+* ``allow_overwrite`` : bool. Optional. Default: False. If true, allow ovewriting output
+  files.
+* ``comsmology`` : dict. Optional. Default: WMAP9 (Hinshaw et al. 2013). Keys are ``H0``
+  (:math:`H_0`) and ``Om0`` (:math:`\Omega_M`). Example:
+  ``cosmology = {'H0': 70, 'Om0': 0.3}``
 
 
 Parametric Library: Two-exponential parametric library
@@ -34,7 +38,7 @@ Section : ``[LibraryParameters]``
 * ``bases_dir`` : string. Directory prefix where the base model files are stored.
 * ``base_file`` : string. STARLIGHT basefile location. For more details on base_file syntax
   consult the STARLIGHT Manual: http://starlight.ufsc.br/
-* ``fraction_type : string. Type of weighting the model components: Allowed types ``light``
+* ``fraction_type`` : string. Type of weighting the model components: Allowed types ``light``
   and ``mass``.
 * ``lambda_norm`` : float. Default: 4020 :math:`\unicode{x212B}`
 

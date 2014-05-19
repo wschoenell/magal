@@ -22,7 +22,7 @@ abc
 Attributes:
 ^^^^^^^^^^^
 
-abc
+*None*
 
 *Input* file
 ------------
@@ -32,14 +32,19 @@ abc
 Attributes:
 ^^^^^^^^^^^
 
-abc
+* ``filters`` :
 
-*Output* file
--------------
+*Magal* Output file
+-------------------
 
 abc
 
 Attributes:
 ^^^^^^^^^^^
 
-abc
+* ``magal_type`` : ``simulation`` or ``data``
+* ``input_file`` : 
+* ``input_md5`` : 
+* ``library_file`` :
+* ``library_md5`` :
+* ``magal_version`` : 

@@ -1,13 +1,47 @@
-***
+===
 API
-***
+===
+
 
 Contents:
 
-.. toctree::
-   :maxdepth: 2
-   
-   api
+.. contents::
+   :local:
+   :depth: 1
+
+
+:mod:`magal.io`
+===============
+
+Classes used mainly to read MagAl output files.
+
+.. automodule:: magal.io.readfilterset
+   :members:
+
+.. automodule:: magal.io.readinput
+   :members:
+
+.. automodule:: magal.io.readlibrary
+   :members:
+
+.. automodule:: magal.io.readmagal
+   :members:
+
+
+
+:mod:`magal.library`
+====================
+
+Classes used to make different kinds of libraries.
+
+.. currentmodule:: magal.library.csp
+.. autoclass:: TwoExponential
+   :members:
+
+.. currentmodule:: magal.library.starlight
+.. autoclass:: StarlightSDSS
+   :members:
+
 
 :mod:`magal.fit`
 ================
@@ -18,27 +52,6 @@ Contents:
 .. currentmodule:: magal.fit.stats
 .. autofunction:: percentiles
 
-:mod:`magal.io`
-===============
-
-.. currentmodule:: magal.io.readfilterset
-.. autoclass:: FilterSet
-   :members:
-
-.. currentmodule:: magal.io.readinput
-.. autoclass:: Input
-   :members:
-
-.. currentmodule:: magal.io.readmagal
-.. autoclass:: MagalFit
-   :members:
-
-.. currentmodule:: magal.io.readlibrary
-.. autoclass:: Library
-   :members:
-   
-.. currentmodule:: magal.io.alhambra
-.. autofunction:: read_ambcat
 
 :mod:`magal.photometry.syntphot`
 ================================
@@ -47,7 +60,7 @@ Contents:
 .. autofunction:: spec2filter
 
 .. currentmodule:: magal.photometry.syntphot
-.. autofunction:: spec2filterset   
+.. autofunction:: spec2filterset
 
 .. currentmodule:: magal.photometry.syntphot
 .. autoclass:: photoconv
@@ -58,7 +71,7 @@ Contents:
 
 .. currentmodule:: magal.plots.mosaic
 .. autofunction:: get_mosaic
-   
+
 :mod:`magal.util`
 =================
 
@@ -67,5 +80,5 @@ Contents:
 
 .. currentmodule:: magal.util.stellarpop
 .. autoclass:: n_component
-	:members:
+    :members:
 
