@@ -15,10 +15,7 @@ from ConfigParser import NoOptionError
 
 import numpy as np
 
-from magal.io.hdf5util import inithdf5
 from magal.io.readfilterset import FilterSet
-
-from astropy.cosmology import WMAP9 as cosmo
 
 from magal.util.cosmo import zcor
 from magal.photometry.syntphot import spec2filterset
@@ -74,7 +71,14 @@ filter_id = config.get('LibraryGeneral', 'filterset')  #TODO: Check if it is val
 z_from = config.getfloat('LibraryGeneral', 'z_from')
 z_to = config.getfloat('LibraryGeneral', 'z_to')
 z_step = config.getfloat('LibraryGeneral', 'z_step')
-#TODO: Add different cosmologies option.
+try:
+    cosmology = ast.literal_eval(config.get('LibraryGeneral', 'cosmology'))
+    from astropy.cosmology import FlatLambdaCDM
+    cosmo = FlatLambdaCDM(H0=cosmology['H0'], Om0=cosmology['Om0'])
+except NoOptionError:
+    print 'Adopting the WMAP9 comology:'
+    from astropy.cosmology import WMAP9 as cosmo
+    print cosmo.__doc__
 
 try:
     allow_overwrite = config.getboolean('LibraryGeneral', 'allow_overwrite')
