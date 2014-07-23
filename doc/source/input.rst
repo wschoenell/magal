@@ -18,7 +18,7 @@ Section : ``[InputGeneral]``
 
 Section : ``[InputProperties]``
 
-* ``unique_id_column`` : dict.
+* ``unique_id_column`` : int.
 * ``general`` : dict.
 * ``flags`` : dict. Optional.
 * ``redshift`` : int. Optional.
