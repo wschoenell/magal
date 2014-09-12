@@ -7,29 +7,21 @@ Created on May 06, 2014
 """
 
 from __future__ import division
-from astropy import units
-from magal.library import LibraryModel
-
+import ast
 import ConfigParser
 from ConfigParser import NoOptionError
-
-import numpy as np
-
-from magal.io.readfilterset import FilterSet
-
-from magal.util.cosmo import zcor
-from magal.photometry.syntphot import spec2filterset
 import os
-
 from multiprocessing import Pool
-
-#logging
-import logging
-from magal.core.log import setConsoleLevel
-
 import sys
 
-setConsoleLevel(logging.CRITICAL)
+from astropy import units
+import h5py
+import numpy as np
+
+from magal.library import LibraryModel
+from magal.io.readfilterset import FilterSet
+from magal.util.cosmo import zcor
+from magal.photometry.syntphot import spec2filterset
 
 
 def spec2filter_z(args):  #FIXME: Move this to somewhere else

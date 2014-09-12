@@ -13,7 +13,11 @@ import ast, ConfigParser
 import numpy as np
 import h5py
 from ConfigParser import NoOptionError
+from magal.core.log import logger
 
+
+log = logger(__name__)
+log.setLevel('DEBUG')
 
 ##### Config file #####
 try:

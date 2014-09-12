@@ -1,14 +1,10 @@
-'''
-Created on Feb 14, 2013
-
-@author: william
-'''
+import os
+import ConfigParser
 
 import h5py
 
-from magal.core.exceptions import MAGALException
-import os
-import ConfigParser
+from ..core.exceptions import MAGALException
+
 
 class MagalFit(h5py.File):
     '''

@@ -6,7 +6,7 @@ Created on Sep 18, 2012
 
 import numpy as np
 
-from magal.core.exceptions import MAGALException
+from ..core.exceptions import MAGALException
 
 #TODO: Remove this to use numpy.lib.recfunctions instead.
 # http://projects.scipy.org/numpy/browser/trunk/numpy/lib/recfunctions.py?rev=8032 

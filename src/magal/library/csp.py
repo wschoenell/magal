@@ -6,10 +6,10 @@ import atpy
 from pystarlight.util.redenninglaws import Charlot_RedLaw
 import numpy as np
 
-from magal.core.exceptions import MAGALException
-from magal.util.stellarpop import n_component
-
 import pystarlight.io
+
+from ..core.exceptions import MAGALException
+from ..util.stellarpop import n_component
 
 
 class TwoExponential(object):

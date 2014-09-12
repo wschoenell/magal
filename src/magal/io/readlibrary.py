@@ -1,13 +1,11 @@
-'''
-Created on Oct 22, 2012
-
-@author: william
-'''
-
 import h5py
 
-import logging
-from magal.core.exceptions import MAGALException
+import numpy as np
+
+from ..core.exceptions import MAGALException
+
+from ..core.log import logger
+
 
 class Library(object):
     '''

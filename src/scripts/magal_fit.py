@@ -22,7 +22,9 @@ import multiprocessing
 
 import h5py
 import numpy as np
+import time
 
+from magal.core.log import logger
 from magal.core.version import _magal_version_, _magal_updated_
 from magal.core.exceptions import MAGALCLIError
 from magal.io.readlibrary import Library
