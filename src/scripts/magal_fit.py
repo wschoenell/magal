@@ -10,9 +10,9 @@ MAGAL -- Magnitudes Analyzer fitting program.
 @contact:    william@iaa.es
 '''
 import hashlib
+import logging
 import sys
 import os
-import logging
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 import ConfigParser

@@ -1,17 +1,17 @@
-'''
-Created on Feb 23, 2012
-
-@author: william
-'''
-
 import os
 import numpy as np
 import h5py
 
+from ..core.exceptions import MAGALException
 
 class FilterSet(object):
     """
     This class reads a filterset file from file and returns a "filter" object.
+
+    Parameters
+    ----------
+    filterfile : string
+        Path to the filter file.
     """
 
     def __init__(self, filterfile):
@@ -22,7 +22,6 @@ class FilterSet(object):
         ----------
         filterfile : string
             Path to the filter file.
-
         '''
         if not os.path.exists(filterfile):
             raise Exception('File not found: %s' % filterfile)
@@ -33,7 +32,7 @@ class FilterSet(object):
             for f_ in self._db_f.keys():
                 self.filtersets[f_] = [ccd for ccd in self._db_f[f_]]
         else:
-            raise Exception('Unsupported filterfile.')
+            raise MAGALException('Unsupported filterfile.')
 
 
     def load(self, filterset_id, ccd):
@@ -75,13 +74,13 @@ class FilterSet(object):
 
         Parameters
         ----------
-        dl: float, optional
-            Delta lambda spacing in Angstroms. (Default: 1 :math`\AA`)
+        dl : float
+            Delta lambda spacing in Angstroms. Optional. Default: 1 :math`\AA`
 
         Returns
         -------
         filterset : array
-            Interpolated filterset. Haves the same shape and dtype of ``FilterSet.filterset``
+            Interpolated filterset. Haves the same shape and dtype of `FilterSet.filterset`
         """
         aux = []
         for fid in np.unique(self.filterset['ID_filter']):
@@ -96,6 +95,12 @@ class FilterSet(object):
     def filter_wls(self):
         '''
         Calculate the mean wave length of each filter. Useful for plotting.
+
+        Returns
+        -------
+        wl : array
+            Filter average wavelengths
+
         '''
         try:
             aux_names = np.unique(self.filterset['ID_filter'])
@@ -104,6 +109,6 @@ class FilterSet(object):
                 [(fid, np.average(self.filterset[self.filterset['ID_filter'] == fid]['wl'])) for fid in aux_names],
                 dtype=dt)
         except AttributeError:
-            raise Exception('You have to load the filtersystem/CCD first!')
+            raise MAGALException('You have to load the filtersystem/CCD first!')
 
         return np.array(aux_ret)

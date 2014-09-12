@@ -1,21 +1,34 @@
 import gzip
 import re
-from astropy import units
 import bz2
 
-from magal.core.exceptions import MAGALException
-from magal.util.matchs import matchobjs
-
+from astropy import units, cosmology
 import numpy as np
 import h5py
 import atpy
-import pystarlight.io
+
+from ..core.exceptions import MAGALException
+from ..util.matchs import matchobjs
+
 
 __author__ = 'william'
 
 
 class StarlightSDSS(object):
-    def __init__(self, type, filename, tables_dir, input_dir, output_dir, data_release='DR7', sample='926246',
+    """
+    Creates a library using STARLIGHT-SDSS project data as input.
+
+    Parameters
+    ----------
+    type : string
+        Just for sanity-check. Must be always ``
+
+    See Also
+    --------
+    library.
+
+    """
+    def __init__(self, type, filename, tables_dir, input_dir, output_dir, cosmo=None, data_release='DR7', sample='926246',
                  base='BS'):
         self.type = type
         self._input_dir = input_dir

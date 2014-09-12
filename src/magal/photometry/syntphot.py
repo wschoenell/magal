@@ -4,13 +4,10 @@ Created on Jul 17, 2012
 @author: william
 '''
 
-
 import numpy as np
 
-import logging
-import magal.core.log
-from magal.core.exceptions import MAGALCLIError
-
+from ..core.log import logger
+from ..core.exceptions import MAGALException
 
 def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
     '''
@@ -212,15 +209,15 @@ def spec2filterset(filterset, obs_spec, model_spec = None, badpxl_tolerance = 0.
     return mags
 
 class photoconv(object):
-    '''
+    """
     Spectrum to Photometry conversion class.
-    ''' 
+    """
     
     def __init__(self):
-        self.log = logging.getLogger('magal.photometry.photoconv') #TODO: This MUST come from the object
+        self.log = logger(__name__)
 
     def fromStarlight(self, filterset, arq_in, arq_syn, starlight_version='starlightv4', badpxl_tolerance=0.5):
-        '''
+        """
         Converts automagically STARLIGHT input and output files into photometric magnitudes
         
         Parameters
