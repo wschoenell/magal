@@ -1,5 +1,1 @@
-=====================================================
- 	     MAGAL - MAGnitudes AnaLyzer
-=====================================================
-
-William Schoenell <wschoenell@iaa.es>
+doc/source/index.rst
