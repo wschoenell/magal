@@ -9,16 +9,15 @@ import traceback
 
 #import logging
 
-def printException (e, stream=sys.stdout):
-
+def printException(e, stream=sys.stdout):
     print >> stream, ''.join(strException(e))
 
     if hasattr(e, 'cause') and getattr(e, 'cause') != None:
         print >> stream, "Caused by:",
         print >> stream, ''.join(e.cause)
 
-def strException (e):
 
+def strException(e):
     # Adapted from chimera observatory control system
     #      (http://code.google.com/p/chimera)
     try:
@@ -29,30 +28,36 @@ def strException (e):
         # clean up cycle to traceback, to allow proper GC
         del exc_type, exc_value, exc_tb
 
+
 #    Exceptions Hierarchy
 
 class MAGALException(Exception):
-
-    def __init__ (self, msg="", *args):
-        Exception.__init__ (self, msg, *args)
+    def __init__(self, msg="", *args):
+        Exception.__init__(self, msg, *args)
 
         if not all(sys.exc_info()):
             self.cause = None
         else:
             self.cause = strException(sys.exc_info()[1])
-            
+
+
 class MAGALCLIError(Exception):
-    '''Generic exception to raise and log different fatal errors on CLI programs.'''
+    """Generic exception to raise and log different fatal errors on scripts."""
+
     def __init__(self, msg):
         super(MAGALCLIError).__init__(type(self))
         self.msg = "ERROR: %s" % msg
+
     def __str__(self):
         return self.msg
+
     def __unicode__(self):
         return self.msg
-            
-class HDF5dbException(MAGALException):
-    pass
 
-class ReadFilterException(MAGALException):
-    pass
+
+# class HDF5dbException(MAGALException):
+#     pass
+#
+#
+# class ReadFilterException(MAGALException):
+#     pass

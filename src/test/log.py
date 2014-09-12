@@ -7,11 +7,13 @@ Test the logger
 '''
 
 import logging
-import magal.core.log
+from magal.core.log import logger
 
-log = logging.getLogger('magal.test')
-magal.core.log.setConsoleLevel(logging.INFO)
+log = logger(__name__)
 
 log.warn('Warn test')
 log.info('Info test')
-#log.err('Err test')
+log.error('Err test')
+log.debug('dgb test 1')
+log.setLevel('DEBUG')
+log.debug('dgb test 2')

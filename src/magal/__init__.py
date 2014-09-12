@@ -24,4 +24,4 @@ MAGAL - MAGnitudes AnaLyzer
 
 """
 
-from magal.core.version import *
+from .core.version import *

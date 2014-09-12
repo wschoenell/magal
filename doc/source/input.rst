@@ -14,7 +14,7 @@ Section : ``[InputGeneral]``
 * ``ccds`` : list.
 * ``delimiter`` : string. Optional. 
 * ``columns`` : dict. 
-* ``extinction`` : dict. Optional
+* ``extinction`` : dict or bool. Optional. If True, will calculate extinction with CCM89 reddening law and Schlegel dust maps.
 
 Section : ``[InputProperties]``
 
