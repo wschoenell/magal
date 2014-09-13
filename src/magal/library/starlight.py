@@ -28,7 +28,9 @@ class StarlightSDSS(object):
     library.
 
     """
-    def __init__(self, type, filename, tables_dir, input_dir, output_dir, cosmo=None, data_release='DR7', sample='926246',
+
+    def __init__(self, type, filename, tables_dir, input_dir, output_dir, cosmo=None, data_release='DR7',
+                 sample='926246',
                  base='BS'):
         self.type = type
         self._input_dir = input_dir
@@ -41,6 +43,10 @@ class StarlightSDSS(object):
         self._syn02_file = '%s/sample.F%s.%s.f.Starlight.SYN02.tab.%s.hdf5' % (tables_dir, data_release, sample, base)
         self._syn03_file = '%s/sample.F%s.%s.f.Starlight.SYN03.tab.%s.hdf5' % (tables_dir, data_release, sample, base)
         self._syn04_file = '%s/sample.F%s.%s.f.Starlight.SYN04.tab.%s.hdf5' % (tables_dir, data_release, sample, base)
+        if cosmo is None:
+            self.cosmo = cosmology.WMAP9
+        else:
+            self.cosmo = cosmo
 
 
     @property
@@ -57,7 +63,8 @@ class StarlightSDSS(object):
         syn_prop = {'syn01': ['A_V', 'v0', 'vd', 'SN_w', 'SN_n'],
                     'syn02': ['at_flux', 'at_mass', 'aZ_flux', 'aZ_mass', 'am_flux', 'am_mass'],
                     'syn03': ['M2L_r'],
-                    'syn04': ['Mcor_fib', 'Mcor_gal', 'z']}  # 'DL_Mpc', 'Mini_fib' comes from SYN03
+                    'syn04': ['Mcor_fib', 'Mini_fib', 'Mcor_gal', 'Mini_gal',
+                              'z']}  # 'DL_Mpc', 'Mini_fib' comes from SYN03
 
         ## Emission lines
         ### The emission lines is a bit tricky. First I separate the items from the file I want, then I calculate some
@@ -111,9 +118,26 @@ class StarlightSDSS(object):
             data[p_] = np.log10(a / b)
             data[p_][mask] = -999
 
+        # Fix k-correction. For more info see Natalia notes on k-correction in doc/ directory.
+        p_fix = ['Mcor_fib', 'Mini_fib', 'Mcor_gal', 'Mini_gal']
+        re_elines_fix = re.compile('^F')
+        kcor_fix = -2 * np.log10(1 + data['z'])
+        kcor_fix_el = np.power(10., kcor_fix)
+        for p_ in p_fix:
+            print 'k-correcting %s ...' % p_
+            data[p_] += kcor_fix
+        for p_ in el_names:
+            if re_elines_fix.match(p_):
+                print 'k-correcting %s ...' % p_
+                data[p_] *= kcor_fix_el
+
         ## Get aux_units from input tables to correct the units of the model/observed STARLIGHT spectra.
-        self._aux_units = 4 * np.pi * np.power(syn['syn04']['DL_Mpc'][id_list] * units.Mpc.to('cm'), 2) / (
-            np.power(10, syn['syn04']['Mini_fib'][id_list]) * units.Lsun.to('erg/s'))
+        DL = self.cosmo.luminosity_distance(data['z']).to('cm')
+        self._aux_units = 4 * np.pi * np.power(DL, 2) / (
+            np.power(10, data['Mini_fib']) * units.Lsun.to('erg/s'))
+
+        ## Fix k-correction. For more info see Natalia notes on k-correction in doc/ directory.
+        self._aux_units *= np.power(data['z'] + 1., 2)
 
         ## Close all files
         tb_el.file.close()
@@ -144,7 +168,7 @@ class StarlightSDSS(object):
         model_spec = np.copy(tm.spectra.data.view(dtype=np.dtype(
             [('wl', tm.spectra.l_obs.dtype), ('f_obs', '<f8'), ('flux', tm.spectra.f_syn.dtype), ('f_wei', '<f8'),
              ('Best_f_SSP', '<f8')])))
-        #     and input..
+        # and input..
         obs_file = '%s/%s' % (self._input_dir, self._sl_files['input'][i_spec])
         if obs_file.endswith('.gz'):
             f = gzip.GzipFile(obs_file)
@@ -164,6 +188,5 @@ class StarlightSDSS(object):
 
     def _check_input(self):
         if self.type != 'starlight_sdss':
-            print('Error creating StarlightSDSS LibraryModel object.')
-            raise MAGALException()
+            raise MAGALException('Error creating StarlightSDSS LibraryModel object.')
         pass
