@@ -4,6 +4,8 @@ Making Magal Libraries
 
 bla bla bla
 
+* Run ``magal_library library.ini``
+
 Ini file keywords
 -----------------
 
@@ -30,7 +32,8 @@ Parametric Library: Two-exponential parametric library
 
 On ``[LibraryGeneral]`` section, this library haves ``library_type = two_exp``
 
-Ini file keywords:
+Ini file keywords
+^^^^^^^^^^^^^^^^^
 
 Section : ``[LibraryParameters]``
 
@@ -57,7 +60,8 @@ STARLIGHT Library: STARLIGHT-SDSS project library
 
 On ``[LibraryGeneral]`` section, this library haves ``library_type = starlight_sdss``
 
-Ini file keywords:
+Ini file keywords
+^^^^^^^^^^^^^^^^^
 
 Section : ``[LibraryParameters]``
 
