@@ -1,6 +1,7 @@
 import ConfigParser
 import ast
 import os
+# from magal.library import LibraryModel
 
 __author__ = 'william'
 
@@ -27,8 +28,13 @@ class MagalConfig(ConfigParser.RawConfigParser):
         """
         ConfigParser.RawConfigParser.__init__(self)
         self.read(config_file)
-        if type == 'library':
+        if config_type == 'library':
             self._load_library_vars()
+        if config_type == 'mkfilterset':
+            self._load_mkfilterset_vars()
+        else:
+            print 'Error! Invalid config_type %s.' % config_type
+            return False
 
     def _get_inputfiles(self, section, files):
         """
@@ -48,14 +54,20 @@ class MagalConfig(ConfigParser.RawConfigParser):
         Raises
         ------
         """
+        fnames = tuple()
         for f_ in files:
-            fname = os.path.expandvars(self.get(section, f_))
+            try:
+                fnames += (ast.literal_eval(os.path.expandvars(self.get(section, f_))),)
+            except ValueError:
+                fnames += (os.path.expandvars(self.get(section, f_)),)
+        return fnames
+
 
     def _load_library_vars(self):
         """
         Loads magal_library related configfile parameters.
         """
-        libfile =
+        libfile = ''
         library_type = os.path.expandvars(self.get('LibraryGeneral', 'library_type'))
         filter_file = os.path.expandvars(self.get('LibraryGeneral', 'filter_file'))
 
@@ -109,4 +121,27 @@ class MagalConfig(ConfigParser.RawConfigParser):
             LibModel = LibraryModel(type, inp_file, tables_dir, input_dir, output_dir)
 
         #### -- ####
+
+
+    def _load_mkfilterset_vars(self):
+        '''
+        Loads magal_mkfilter related vars
+        '''
+
+        # 1 - Get the filenames
+        self.filterset_file, self.filter_filenames = self._get_inputfiles('FilterLibrary',
+                                                                          ('filterset_file', 'filter_filenames'))
+        # 2 - Check if filters exists
+        for ccd in self.filter_filenames.keys():
+            for filter_file in self.filter_filenames[ccd]:
+                if not os.path.isfile(filter_file):
+                    print 'File %s does not exists' % filter_file
+                    return False
+        if os.path.exists(self.filterset_file):
+            print 'File %s does exists' % self.filterset_file
+            return False
+
+        # 3 - Read the other options
+        self.filterset_name = self.get('FilterLibrary', 'filterset_name')
+        self.filter_names = ast.literal_eval(self.get('FilterLibrary', 'filter_names'))
 

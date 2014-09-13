@@ -24,39 +24,43 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-
-import os
 import sys
-import time
-import h5py
-import atpy
 
 import numpy as np
-
-from magal.io.readfilterset import FilterSet
 from magal.io.hdf5util import inithdf5
 
-# if __name__ == '__main__' and len(sys.argv) > 2:
-
-dbfile = sys.argv[1]
-# Init file
-db = inithdf5(dbfile)
+from magal.core.config import MagalConfig
 
 
-for filter_file in sys.argv[2:]:
-    aux_id = os.path.basename(filter_file).split('.')
-    f = FilterSet()
-    f.read(filter_file)
-    for fid in np.unique(f.filterset['ID_filter']):
-        dataset = '/%s/%s/%s' % (aux_id[0], aux_id[1] ,fid)
-        print dataset
-        aux = atpy.Table(name = fid)
-        aux.add_column(name='wl', data = f.filterset['wl'][f.filterset['ID_filter'] == fid])
-        aux.add_column(name='transm', data = f.filterset['transm'][f.filterset['ID_filter'] == fid])
-        db.create_dataset(dataset, data = aux.data)
+def main():
+    if len(sys.argv) > 1:
 
+        config = MagalConfig(sys.argv[1], 'mkfilterset')
+        if not config:
+            sys.exit(2)
 
-db.close()
+        # Init file
+        db = inithdf5(config.filterset_file)
 
-# else:
-#     print 'Usage: %s filterdbfile.hdf5 FilterSet.CCD1.filter FilterSet.CCD2.filter ... FilterSet.CCD#.filter' % sys.argv[0]
+        dt = np.dtype([('wl', np.float), ('transm', np.float)])
+
+        filter_dset = None
+
+        for ccd, filter_files in config.filter_filenames.iteritems():
+            i_name = 0
+            for filter_file in filter_files:
+                filter_id = config.filter_names[ccd][i_name]
+                dataset = '/%s/%s/%s' % (config.filterset_name, ccd, filter_id)
+                filter_data = np.loadtxt(filter_file, dtype=dt)
+                if filter_dset is None:
+                    db.create_dataset(dataset, data=filter_data, dtype=dt)
+                else:
+                    print 'Error. Found duplicate filter_names.'
+                    return 2
+                i_name += 1
+
+        db.close()
+        return 0
+    else:
+        print 'Usage: %s configuration.ini' % sys.argv[0]
+        return 2
