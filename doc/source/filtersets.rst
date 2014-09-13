@@ -1,9 +1,11 @@
 Making filtersets file
 ----------------------
 
-bla bla bla
+To start playing around with **MagAl** you should have the filter curves stored on its format. To create it from ASCII
+files, you should run the ``magal_mkfilterset`` script with the ``.ini`` configuration as described on this page.
 
-Ini file keywords:
+Ini file keywords
+^^^^^^^^^^^^^^^^^
 
 Section : ``[FilterLibrary]``
 
@@ -22,7 +24,7 @@ Example: Making filterset file to SDSS
 
 
 * Download the SDSS filter transmission curves and save, for example, on
-  $HOME/Downloads/sdss. SDSS filters can be downloaded from this page:
+  $HOME/Downloads/sdss/ folder. SDSS filters can be downloaded from this page:
   http://www.sdss2.org/dr7/instruments/imager/index.html#tables
 
 * Make an .ini file for it:
@@ -32,4 +34,4 @@ Download: :download:`mkfilter.ini <ini/mkfilter.ini>`
 .. literalinclude:: ini/mkfilter.ini
    :language: ini
    
-* Run ``magal_mkfilterset mkfilter.ini`` 
+* Run ``magal_mkfilterset mkfilter.ini``

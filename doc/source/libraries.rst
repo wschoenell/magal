@@ -4,7 +4,8 @@ Making Magal Libraries
 
 bla bla bla
 
-Ini file keywords:
+Ini file keywords
+-----------------
 
 Section : ``[LibraryGeneral]``
 
