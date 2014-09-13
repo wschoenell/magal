@@ -31,7 +31,7 @@ def spec2filter_z(args):  #FIXME: Move this to somewhere else
     if z == 0:
         d_L = 3.08567758e19  # 10 parsec in cm
     else:
-        d_L = cosmo.comoving_distance(z).to('cm')
+        d_L = cosmo.luminosity_distance(z).to('cm')
     k_cosmo = units.Lsun.to('erg/s') / (4 * np.pi * np.power(d_L, 2))
 
     if n_spec == 1:  # If there is only model.
@@ -68,8 +68,9 @@ try:
     from astropy.cosmology import FlatLambdaCDM
     cosmo = FlatLambdaCDM(H0=cosmology['H0'], Om0=cosmology['Om0'])
 except NoOptionError:
-    print 'Adopting the WMAP9 comology:'
+    print 'Adopting the WMAP9 cosmology:'
     from astropy.cosmology import WMAP9 as cosmo
+
     print cosmo.__doc__
 
 try:
@@ -82,16 +83,14 @@ if os.path.exists(libfile):
             os.unlink(libfile)
         except:
             print u'Cannot DELETE file {0:s}.'.format(libfile)
-            # return 1
+            sys.exit(1)
     else:
         print u'File {0:s} already exists.'.format(libfile)
-        # return 1
+        sys.exit(1)
 
 
 # 1 - Two-exponential library parameters:
 if library_type == 'two_exp':
-    #TODO: Add this to hdf5 attrs
-    #TODO: Add .ini to the hdf5 file.
     inp_file = os.path.expandvars(config.get('LibraryParameters', 'input_file'))
     basedir = os.path.expandvars(config.get('LibraryParameters', 'bases_dir'))
     basefile = os.path.expandvars(config.get('LibraryParameters', 'base_file'))
@@ -108,7 +107,7 @@ elif library_type == 'starlight_sdss':
     tables_dir = os.path.expandvars(config.get('LibraryParameters', 'tables_dir'))
     input_dir = os.path.expandvars(config.get('LibraryParameters', 'input_dir'))
     output_dir = os.path.expandvars(config.get('LibraryParameters', 'output_dir'))
-    LibModel = LibraryModel(type, inp_file, tables_dir, input_dir, output_dir)
+    LibModel = LibraryModel(type, inp_file, tables_dir, input_dir, output_dir, cosmo)
 
 #### -- ####
 
@@ -117,11 +116,16 @@ z_range = np.arange(z_from, z_to, z_step)
 Nz = len(z_range)
 
 # 1 - Init/Read Files
-## 1.1 - Filter
-# db_f = read_filterhdf5(filter_file)
+## 1.1 - Load filter information
 f = FilterSet(filter_file)
 ## 1.2 - New Library
-db = inithdf5(libfile)
+db = h5py.File(libfile, 'w')
+
+# Write full .ini file on model outputfile.
+aux_ini = open(sys.argv[1], 'r').read()
+ds = db.create_dataset('/ini_file', shape=(1,), dtype=h5py.new_vlen(str))
+ds[:] = aux_ini
+
 ### 1.2.1 - Tables group
 db.create_group('/tables/')
 ### 1.2.2 - Filtersystem group.
