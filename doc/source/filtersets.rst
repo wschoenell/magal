@@ -2,7 +2,7 @@ Making filtersets file
 ----------------------
 
 To start playing around with **MagAl** you should have the filter curves stored on its format. To create it from ASCII
-files, you should run the ``magal_mkfilterset`` script with the ``.ini`` configuration as described on this page.
+files, you should run the ``magal_filterset`` script with the ``.ini`` configuration as described on this page.
 
 Ini file keywords
 ^^^^^^^^^^^^^^^^^

@@ -15,24 +15,17 @@ __author__ = 'william'
 
 
 class StarlightSDSS(object):
-    """
-    Creates a library using STARLIGHT-SDSS project data as input.
+    def __init__(self, lib_type, filename, tables_dir, input_dir, output_dir, cosmo=None, data_release='DR7',
+                 sample='926246', base='BS'):
+        """
+        Creates a library using STARLIGHT-SDSS project data as input.
 
-    Parameters
-    ----------
-    type : string
-        Just for sanity-check. Must be always ``
-
-    See Also
-    --------
-    library.
-
-    """
-
-    def __init__(self, type, filename, tables_dir, input_dir, output_dir, cosmo=None, data_release='DR7',
-                 sample='926246',
-                 base='BS'):
-        self.type = type
+        Parameters
+        ----------
+        lib_type : string
+            Just for sanity-check. Must be always ``
+        """
+        self.type = lib_type
         self._input_dir = input_dir
         self._output_dir = output_dir
 
@@ -54,7 +47,7 @@ class StarlightSDSS(object):
         return self._get_data()
 
     def _get_data(self):
-        ## SYN [1-4] properties
+        # # SYN [1-4] properties
         syn = {}
         syn['syn01'] = h5py.File(self._syn01_file, 'r').get('/SYN01')
         syn['syn02'] = h5py.File(self._syn02_file, 'r').get('/SYN02')

@@ -34,6 +34,10 @@ Classes used mainly to read MagAl output files.
 
 Classes used to make different kinds of libraries.
 
+.. currentmodule:: magal.library.spectral
+.. autoclass:: Spectral
+   :members:
+
 .. currentmodule:: magal.library.csp
 .. autoclass:: TwoExponential
    :members:
@@ -69,16 +73,20 @@ Classes used to make different kinds of libraries.
 :mod:`magal.plots`
 ==================
 
+.. currentmodule:: magal.plots.plot_helpers
+.. autoclass:: plotMagal
+   :members:
+
 .. currentmodule:: magal.plots.mosaic
 .. autofunction:: get_mosaic
 
 :mod:`magal.util`
 =================
 
-.. currentmodule:: magal.util.cosmo
-.. autofunction:: zcor
-
 .. currentmodule:: magal.util.stellarpop
 .. autoclass:: n_component
     :members:
+
+.. currentmodule:: magal.util.cosmo
+.. autofunction:: zcor
 
