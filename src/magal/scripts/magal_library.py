@@ -25,7 +25,7 @@ from magal.photometry.syntphot import spec2filterset
 
 
 def spec2filter_z(args):  # FIXME: Move this to somewhere else
-    spec, ccd_filter, z = args
+    spec, ccd_filter, z, cosmo = args
     n_spec = np.shape(spec)[0]
 
     if z == 0:
@@ -168,7 +168,7 @@ def main():
             args = []
             spec = LibModel.get_model_spectrum(i_model)
             for z in z_range:
-                args.append((spec, ccd_vec[ccd], z))
+                args.append((spec, ccd_vec[ccd], z, cosmo))
             pool = Pool()
             result = pool.map(spec2filter_z, args)
             pool.close()
