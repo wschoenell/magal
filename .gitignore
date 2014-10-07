@@ -7,4 +7,5 @@
 .idea/
 .project
 .pydevproject
-.externalToolBuilders/build/
+.externalToolBuilders/
+build/

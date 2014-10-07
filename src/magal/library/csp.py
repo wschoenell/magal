@@ -17,13 +17,13 @@ class TwoExponential(object):
     A simple library w/ two exponential decaying components.
     """
 
-    def __init__(self, type, input_file, bases_dir, base_file, fraction_type, lambda_norm=4020.):
+    def __init__(self, library_type, input_file, bases_dir, base_file, fraction_type, lambda_norm=4020.):
         """
         A simple library w/ two exponential decaying components.
 
         Parameters
         ----------
-        type : string
+        library_type : string
             Will raise an error if it is different from ``two_exp``.
 
         input_file : string
@@ -44,7 +44,7 @@ class TwoExponential(object):
         """
 
         # 0 - Check if all the parameters are okay.
-        self.type = type
+        self.type = library_type
         self.input_file = input_file
         self.bases_dir = bases_dir
         self.base_file = base_file

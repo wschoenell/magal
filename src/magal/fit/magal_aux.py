@@ -5,12 +5,13 @@ Created on Jul 23, 2013
 '''
 
 import numpy as np
-from magal.util.matchs import get_zslice
-from magal.fit.stats import chi2
-from magal.io.readlibrary import Library
+
+from ..core.log import logger
+from ..util.matchs import get_zslice2
+from ..fit.stats import chi2
+
 
 def chi2_wrapper(p):
-#     i_obj,i_z,i_tpl, o, m, w = p
     i_obj, obj, filterset_mask, N_tpl, N_z, inp_z, is_simulation, Nz, lib_file, filter_sys, ccd, mass_field = p
     
     if i_obj % 10 == 0:

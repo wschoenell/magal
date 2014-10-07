@@ -37,19 +37,19 @@ def main():
 
     # # General
     output_file = config.get('InputGeneral', 'output_file')
-    filterset_id = config.get('InputGeneral', 'filterset_id')
+    filterset_name = config.get('InputGeneral', 'filterset_name')
 
     ## Magnitudes
-    path_files = ast.literal_eval(config.get('InputGeneral', 'path_files'))
-    catalog_fnames = ast.literal_eval(config.get('InputGeneral', 'cat_files'))
-    ccds = ast.literal_eval(config.get('InputGeneral', 'ccds'))
+    path_files = ast.literal_eval(config.get('InputMagnitudes', 'path_files'))
+    catalog_fnames = ast.literal_eval(config.get('InputMagnitudes', 'cat_files'))
+    ccds = ast.literal_eval(config.get('InputMagnitudes', 'ccds'))
 
     try:
         catalog_delimiter = ast.literal_eval(config.get('InputGeneral', 'delimiter'))
     except:
         catalog_delimiter = None
 
-    columns = ast.literal_eval(config.get('InputGeneral', 'columns'))
+    columns = ast.literal_eval(config.get('InputMagnitudes', 'columns'))
     filter_ids = sorted(columns.keys())  # IMPORTANT! Always use a sorted version of the array!
     Nfilters = len(filter_ids)
     input_dt = [(key, np.float) for key in filter_ids]
@@ -145,9 +145,9 @@ def main():
         ###
         if z_col:
             redshift_data = np.loadtxt(aux_fname, dtype=np.float, usecols=(z_col,), delimiter=catalog_delimiter)
-            db_redshift = db.get('/%s/%s/tables/z' % (filterset_id, ccd))
+            db_redshift = db.get('/%s/%s/tables/z' % (filterset_name, ccd))
             if db_redshift is None:
-                db_redshift = db.create_dataset(name='/%s/%s/tables/z' % (filterset_id, ccd),
+                db_redshift = db.create_dataset(name='/%s/%s/tables/z' % (filterset_name, ccd),
                                                 data=redshift_data,
                                                 dtype=np.float,
                                                 chunks=True,
@@ -159,10 +159,10 @@ def main():
         ###
         ###  3 - Save properties table data.
         ###
-        db_properties = db.get('/%s/%s/tables/properties' % (filterset_id, ccd))
+        db_properties = db.get('/%s/%s/tables/properties' % (filterset_name, ccd))
         if db_properties is None:
             db_properties = db.create_dataset(
-                name='/%s/%s/tables/properties' % ((filterset_id, ccd)),
+                name='/%s/%s/tables/properties' % ((filterset_name, ccd)),
                 data=prop_data,
                 dtype=properties_dt,
                 chunks=True,
@@ -174,9 +174,9 @@ def main():
         ###
         ###  4 - Load magnitudes to the table.
         ###
-        db_data = db.get('/%s/%s/data' % (filterset_id, ccd))
+        db_data = db.get('/%s/%s/data' % (filterset_name, ccd))
         if db_data is None:
-            db_data = db.create_dataset(name='/%s/%s/data' % ((filterset_id, ccd)),
+            db_data = db.create_dataset(name='/%s/%s/data' % ((filterset_name, ccd)),
                                         shape=(Ngal, Nfilters),
                                         dtype=np.dtype([('m_ab', np.float), ('e_ab', np.float)]),
                                         chunks=(1, 5),

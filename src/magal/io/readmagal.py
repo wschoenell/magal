@@ -30,10 +30,6 @@ class MagalFit(h5py.File):
         # 1.1 - Get Filtersets
         self.filtersystems = self.keys()
         self.filtersystems.remove('ini_file')
-        try:
-            self.filtersystems.remove('md5sums')
-        except:
-            print 'Using old version of output file! This should be changed.'
         
         # 1.2 - Get CCDs
         self.ccds = [key for key in self[self.filtersystems[0]].keys()]

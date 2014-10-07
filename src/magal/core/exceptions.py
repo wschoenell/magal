@@ -12,7 +12,7 @@ import traceback
 def printException(e, stream=sys.stdout):
     print >> stream, ''.join(strException(e))
 
-    if hasattr(e, 'cause') and getattr(e, 'cause') != None:
+    if hasattr(e, 'cause') and getattr(e, 'cause') is not None:
         print >> stream, "Caused by:",
         print >> stream, ''.join(e.cause)
 

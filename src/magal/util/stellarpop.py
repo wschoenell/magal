@@ -85,7 +85,7 @@ class n_component(object):  # Define a N-component SFH vector.
             :math:`t_0` of the exponential burst.
 
         tau : float
-            :math:`\tau` of the exponential burst.
+            :math:`\\tau` of the exponential burst.
 
         frac : float
             Light fraction :math:`A` of this burst.
@@ -95,15 +95,15 @@ class n_component(object):  # Define a N-component SFH vector.
 
     def add_gauss(self, t_b, tau, frac):
         """
-        Add a gaussian to the SFH curves.
+        Add a gaussian :math:`t e^{-(t_0 - t)^2/2 \\tau^2}` to the SFH curves.
 
         Parameters
         ----------
         t_b : float
-            ???
+            Time of the center of the burst.
 
         tau : float
-           ???
+           Related to the burst width. See eq above.
 
         frac : float
             Light fraction of this burst.
@@ -160,7 +160,7 @@ class n_component(object):  # Define a N-component SFH vector.
 
         """
         sfh = np.sum(self.individual_sfh_curves, axis=0)
-        sfh = sfh / np.sum(sfh)
+        sfh /= np.sum(sfh)
 
         return sfh
 

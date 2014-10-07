@@ -1,13 +1,8 @@
-'''
-Created on Oct 22, 2012
-
-@author: william
-'''
-
 import h5py
 
-import logging
-from magal.core.exceptions import MAGALException
+from ..core.exceptions import MAGALException
+from ..core.log import logger
+
 
 class Input(h5py.File):
     '''
@@ -29,6 +24,7 @@ class Input(h5py.File):
         
         # 1.1 - Get Filtersets
         self.filtersystems = self.keys()
+        self.filtersystems.remove('ini_file')
         # 1.2 - and CCDs
         self.ccds = [key for key in self[self.filtersystems[0]].keys()]
         
@@ -46,7 +42,7 @@ class Input(h5py.File):
              CCD id.
         '''
         
-        log = logging.getLogger('magal.io.readinput')
+        log = logger(__name__)
         
         if fsys in self.filtersystems:
             self.ccd = ccd

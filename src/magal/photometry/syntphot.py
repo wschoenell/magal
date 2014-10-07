@@ -14,7 +14,7 @@ def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
     Converts a spectrum on AB magnitude given a filter bandpass.
 
     If there are bad pixels on filter interval on a fraction inferior to the badpxl_tolerance, it will
-    interpolate the missing values or, in case of a model_spec != None, it will use the values from model_spec.
+    interpolate the missing values or, in case of a model_spec is not None, it will use the values from model_spec.
 
     Parameters
     ----------
@@ -60,27 +60,28 @@ def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
     -----
 
     '''
-    log = logging.getLogger('magal.photometry.photoconv')
+    log = logger(__name__)
     #Cut the spectrum on the filterset range. This improves the velocity of the rest of the accounts.
     obs_cut = obs_spec[np.bitwise_and(obs_spec['wl'] >= np.min(filter['wl']), obs_spec['wl'] <= np.max(filter['wl']))]
     
-    if model_spec != None:
-        model_cut = model_spec[:,np.bitwise_and(model_spec['wl'] >= np.min(filter['wl']), model_spec['wl'] <= np.max(filter['wl']))]
+    if model_spec is not None:
+        model_cut = model_spec[np.bitwise_and(model_spec['wl'] >= np.min(filter['wl']), model_spec['wl'] <= np.max(filter['wl']))]
         if len(model_cut) == 0:
-            log.warning('No enough MODEL datapoints eval synthetic photometry on this filter. Model will NOT be considered.')
+            #log.warning('No enough MODEL datapoints eval synthetic photometry on this filter. Model will NOT be considered.')
             model_spec = None
         elif np.any(model_cut['wl'] != obs_cut['wl']):
-            log.warning('Model is not sampled the same way as the observed spectrum. Interpolating...')
+            #log.warning('Model is not sampled the same way as the observed spectrum. Interpolating...')
             aux = np.copy(model_cut)
-            model_cut = obs_cut[:len(model_spec)]
+            # model_cut = obs_cut[:len(model_spec)].copy()
+            model_cut = np.zeros(len(obs_cut), dtype=model_cut.dtype)
+            model_cut['wl'] = obs_cut['wl']
             model_cut['flux'] = np.interp(obs_cut['wl'],aux['wl'],aux['flux'], left=0.0, right=0.0)
-    
     #Check if the filterset is sampled correctly
     #  - Tip: Resample the filter to your data when reading the filter to avoid unnessessary interpolations. 
-    if(np.any(obs_cut['wl'] != filter['wl'])):
-        log.warning('Filter is not sampled the same way as the observed spectrum. Interpolating...')
+    if np.any(obs_cut['wl'] != filter['wl']):
+        # log.warning('Filter is not sampled the same way as the observed spectrum. Interpolating...')
         wl_ = obs_cut['wl']
-        transm_ = np.interp(obs_cut['wl'],filter['wl'],filter['transm'])
+        transm_ = np.interp(wl_,filter['wl'],filter['transm'])
     else:
         wl_ = filter['wl']
         transm_ = filter['transm']
@@ -129,16 +130,15 @@ def spec2filter(filter, obs_spec, model_spec=None, badpxl_tolerance = 0.5):
         else:
             #If we have # of bad pixels less than 50%, we simply neglect this point on the error acoounts,
             #and make flux = synthetic flux, if available, if not, interpolate values.
-            if model_spec != None:
+            if model_spec is not None:
                 obs_cut['flux'][bad] = model_cut['flux'][bad]
             else: 
                 obs_cut['flux'][bad] = np.interp(obs_cut['wl'][bad], obs_cut['wl'][good], obs_cut['flux'][good])
 
     else: # If our observed obs_spec is ALL ok. =)
         log.debug('No bad pixel! =)')
-    
     m_ab = -2.5 * np.log10( np.trapz(obs_cut['flux'] * transm_ * wl_, wl_)  / np.trapz(transm_ / wl_, wl_) ) - 2.41
-    
+
     if('error' in obs_cut.dtype.names):
         e_ab = 1.0857362047581294 * np.sqrt( np.sum(transm_[good]**2 * obs_cut['error'][good]**2 * wl_[good] ** 2 )) / np.sum(obs_cut['flux'][good] * transm_[good] * wl_[good])
     else:
@@ -193,13 +193,13 @@ def spec2filterset(filterset, obs_spec, model_spec = None, badpxl_tolerance = 0.
            
     See Also
     --------
-    spec2filter, magal.io.readfilterset
+    spec2filter, magal.io.readfilterset.FilterSet
     
     Notes
     -----
 
     '''
-    log = logging.getLogger('magal.photometry.photoconv')
+    log = logger(__name__)
     filter_ids = np.unique(filterset['ID_filter'])
     mags = np.zeros(len(filter_ids), dtype = np.dtype([('m_ab', '<f4'), ('e_ab', '<f4')]))
     for i_filter in range(len(filter_ids)):
@@ -212,7 +212,7 @@ class photoconv(object):
     """
     Spectrum to Photometry conversion class.
     """
-    
+
     def __init__(self):
         self.log = logger(__name__)
 
@@ -223,47 +223,51 @@ class photoconv(object):
         Parameters
         ----------
         filterset : object
-                    Filter transmission curves (see: magal.io.readfilterset).
+            Filter transmission curves (see: magal.io.readfilterset).
         arq_in : string
-                 Starlight input filename (or atpy.TableSet(type='starlight_input') object)
+            Starlight input filename (or atpy.TableSet(type='starlight_input') object)
         arq_syn : string
-                  Starlight synthesis filename (or atpy.TableSet(type=starlight_version) object)
+            Starlight synthesis filename (or atpy.TableSet(type=starlight_version) object)
         starlight_version : string, default = 'starlightv4'
-                            Starlight synthesis file version (Default: starlightv4)
+            Starlight synthesis file version (Default: starlightv4)
         badpxl_tolerance : float, default: 0.5
-                           Bad pixel fraction tolerance on the spectral interval of each filter. (Default: 0.5)
+            Bad pixel fraction tolerance on the spectral interval of each filter. (Default: 0.5)
         
         Returns
         -------
-        m_ab: numpy.ndarray dtype = [('m_ab', '<f4'), ('e_ab', '<f4')]
+        m_ab : numpy.ndarray dtype = [('m_ab', '<f4'), ('e_ab', '<f4')]
         
         See Also
         --------
         fromSDSSfits, magal.io.readfilterset
         
-        '''
+        """
         
-        try: # Try to import pystarlight...
+        try:  # Try to import pystarlight...
+            import pystarlight.io
             import atpy
-            import pystarlight.io.starlighttable
         except ImportError:
-            self.log.critical('Could not load pystarlight. Needed to convert from STARLIGHT')
+            MAGALException('Could not load pystarlight. Needed to convert from STARLIGHT')
         
-        try: # Check if it is an atpy or a filename
-            obs_spec = arq_in.starlight_input.data.view(dtype = np.dtype([('wl', '<f8'), ('flux', '<f8'), ('error', '<f8'), ('flag', '<i8')]))
+        try:  # Check if it is an atpy or a filename
+            obs_spec = arq_in.starlight_input.data.view(
+                dtype=np.dtype([('wl', '<f8'), ('flux', '<f8'), ('error', '<f8'), ('flag', '<i8')]))
         except AttributeError:
-            arq_in = atpy.TableSet(arq_in, type='starlight_input')
-            obs_spec = arq_in.starlight_input.data.view(dtype = np.dtype([('wl', '<f8'), ('flux', '<f8'), ('error', '<f8'), ('flag', '<i8')]))
+            arq_in = atpy.Table(arq_in, type='starlight_input')
+            obs_spec = arq_in.data.view(
+                dtype=np.dtype([('wl', '<f8'), ('flux', '<f8'), ('error', '<f8'), ('flag', '<i8')]))
         
-        try: # Check if it is an atpy or a filename
-            model_spec = arq_syn.spectra.data.view(dtype = np.dtype([('wl', '<f8'), ('f_obs', '<f8'), ('flux', '<f8'), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')]))
+        try:  # Check if it is an atpy or a filename
+            model_spec = arq_syn.spectra.data.view(dtype=np.dtype(
+                [('wl', '<f8'), ('f_obs', '<f8'), ('flux', '<f8'), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')]))
         except AttributeError:
             arq_syn = atpy.TableSet(arq_syn, type=starlight_version)
-            model_spec = arq_syn.spectra.data.view(dtype = np.dtype([('wl', '<f8'), ('f_obs', '<f8'), ('flux', '<f8'), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')]))    
-        
-        obs_spec['flux'] = obs_spec['flux'] * 1e-17
-        obs_spec['error'] = obs_spec['error'] * 1e-17
-        model_spec['flux'] = model_spec['flux'] * arq_syn.keywords['fobs_norm'] * 1e-17
+            model_spec = arq_syn.spectra.data.view(dtype=np.dtype(
+                [('wl', '<f8'), ('f_obs', '<f8'), ('flux', '<f8'), ('f_wei', '<f8'), ('Best_f_SSP', '<f8')]))
+
+        obs_spec['flux'] *= 1e-17
+        obs_spec['error'] *= 1e-17
+        model_spec['flux'] *= arq_syn.keywords['fobs_norm'] * 1e-17
         
         
         return spec2filterset(filterset, obs_spec, model_spec, badpxl_tolerance = badpxl_tolerance)
@@ -291,24 +295,32 @@ class photoconv(object):
         
         '''
         
-        try: # Try to import atpy
+        try:  # Try to import atpy
             import atpy
         except ImportError:
-            self.log.critical('Could not load atpy. Needed to convert from SDSS fits files')
-            
-        try: # Is it already a atpy table?
-            fits.data['loglam'] = 10**fits.data['loglam']
-            self.obs_spec = fits.data.view(dtype = np.dtype([('flux', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'), ('sky', '>f4'), ('no', '>f4')]))
-            self.model_spec = fits.data.view(dtype = np.dtype([('no', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'), ('sky', '>f4'), ('flux', '>f4')]))
+            MAGALException('Could not load atpy. Needed to convert from SDSS fits files')
+
+        try:  # Is it already a atpy table?
+            fits.data['loglam'] = 10 ** fits.data['loglam']
+            self.obs_spec = fits.data.view(dtype=np.dtype(
+                [('flux', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'),
+                 ('sky', '>f4'), ('no', '>f4')]))
+            self.model_spec = fits.data.view(dtype=np.dtype(
+                [('no', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'),
+                 ('sky', '>f4'), ('flux', '>f4')]))
         except AttributeError: # If doesn't work, read the file... 
             fits = atpy.Table(fits, hdu='COADD')
             fits.data['loglam'] = 10**fits.data['loglam']
-            self.obs_spec = fits.data.view(dtype = np.dtype([('flux', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'), ('sky', '>f4'), ('no', '>f4')]))
-            self.model_spec = fits.data.view(dtype = np.dtype([('no', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'), ('sky', '>f4'), ('flux', '>f4')]))
+            self.obs_spec = fits.data.view(dtype=np.dtype(
+                [('flux', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'),
+                 ('sky', '>f4'), ('no', '>f4')]))
+            self.model_spec = fits.data.view(dtype=np.dtype(
+                [('no', '>f4'), ('wl', '>f4'), ('error', '>f4'), ('flag', '>i4'), ('or_mask', '>i4'), ('err', '>f4'),
+                 ('sky', '>f4'), ('flux', '>f4')]))
             
         
-        self.obs_spec['flux'] = self.obs_spec['flux'] * 1e-17
-        self.obs_spec['error'] = self.obs_spec['error'] * 1e-17
-        self.model_spec['flux'] = self.model_spec['flux'] * 1e-17
+        self.obs_spec['flux'] *= 1e-17
+        self.obs_spec['error'] *= 1e-17
+        self.model_spec['flux'] *= 1e-17
         
         return spec2filterset(filterset, self.obs_spec, self.model_spec, badpxl_tolerance)
