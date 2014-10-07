@@ -1,7 +1,9 @@
 Making input file
 -----------------
 
-bla bla bla
+To standarize the input to magal, we have to transform the input files (in ASCII, for example) to
+ magal HDF5 files. This is done by running ``magal_input config_file.ini`` script. The configuration
+ file is described on the following section.
 
 Ini file keywords
 ^^^^^^^^^^^^^^^^^
@@ -15,7 +17,8 @@ Section : ``[InputGeneral]``
 * ``ccds`` : list.
 * ``delimiter`` : string. Optional. 
 * ``columns`` : dict. 
-* ``extinction`` : dict or bool. Optional. If True, will calculate extinction with CCM89 reddening law and Schlegel dust maps.
+* ``extinction`` : dict or bool. Optional. If True, will calculate extinction with CCM89
+reddening law and Schlegel dust maps.
 
 Section : ``[InputProperties]``
 
