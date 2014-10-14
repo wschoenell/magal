@@ -1,2 +1,2 @@
 export photo_filters=$HOME/doutorado/photo_filters/
-python ../scripts/magal_makefilterset ini/mkfilter.ini
+python ../scripts/magal_mkfilterset ini/mkfilter.ini
