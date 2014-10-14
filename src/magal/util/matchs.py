@@ -32,4 +32,18 @@ def matchobjs(list1, list2):
 
 def get_zslice(l, z):
     i_z = np.argmin((l.z - z)**2) # Due to precision problems!
+    # kk = (l.z - z)**2
+    # if np.any(kk > 1):
+    #     print kk
+    # if i_z != 0:
+    #     print l.z, z, "DEBUG zslice"
     return np.copy(l.library[i_z,:])
+
+def get_zslice2(l, l_z, z):
+    i_z = np.argmin((l_z - z)**2) # Due to precision problems!
+    # kk = (l.z - z)**2
+    # if np.any(kk > 1):
+    #     print kk
+    # if i_z != 0:
+    #     print l.z, z, "DEBUG zslice"
+    return np.copy(l[i_z,:])

@@ -34,14 +34,19 @@ def chi2(m_o, m_l, w):
     chi2: array_like
           Chi-square. :math:`\\chi^2 = \\sum_l \\left( m_o(l) - m_l(l) - s_{lo}(l) \\right)^2 * w^2(l)`
     """
-    mask = np.bitwise_and(np.bitwise_and(np.isfinite(m_o), np.isfinite(m_l)), np.bitwise_and(np.isfinite(w), w > 0))
+    mask = (m_o == np.inf) + (m_l == np.inf) + (w == 0) + np.isnan(m_o) + np.isnan(w)
+    mask = np.invert(mask)
     w2 = w[mask]
     w2 **= 2
-    n_good = len(w2)
     dm = m_o[mask] - m_l[mask]
-    s = np.sum(w2 * (dm)) / np.sum(w2)  # Scaling-factor = - 2.5 log M_\star
+    s = np.sum(w2 * dm) / np.sum(w2)  # Scaling-factor = - 2.5 log M_\star
 
-    return n_good, s, np.sum(np.power(dm - s, 2) * w2)  # n_good, s, chi2
+    n_total = len(mask)
+    n_good = len(w2)
+    if n_good == 0:
+        print 'n_good is ZERO!'
+    # return n_good, s, np.sum(np.power(dm - s, 2) * w2) # n_good, s, chi2
+    return n_good, s, n_good * np.sum(np.power(dm - s, 2) * w2) / n_total  # n_good, s, chi2
 
 
 def percentiles(x, y, perc):
