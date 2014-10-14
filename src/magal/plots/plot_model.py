@@ -7,12 +7,13 @@ Created on Feb 14, 2013
 import numpy as np
 from magal.fit.stats import percentiles as _percentiles
 
-def plot_chi2(axis, prop, likelihood, x, x_correct=None, percentiles=None, nbins = 100, log=False):
+def plot_chi2(axis, prop, likelihood, x, x_correct=None, percentiles=None, nbins = 100, log=False, limits=None):
     #plt.clf()
     
     if log:
         x = np.log10(x)
-        x_correct = np.log10(x_correct)
+        if x_correct:
+            x_correct = np.log10(x_correct)
         if percentiles:
             percentiles[i] = [np.log10(percentiles[i]) for i in percentiles.dtype.names]
     
@@ -48,15 +49,17 @@ def plot_chi2(axis, prop, likelihood, x, x_correct=None, percentiles=None, nbins
         axis.plot([percentiles['16'], percentiles['16']],ylim, '-.', color='black')   #P16
         axis.plot([percentiles['84'], percentiles['84']],ylim, '-.', color='black')   #P84
         axis.plot([percentiles['50'], percentiles['50']],ylim, '--', color='red')   #P50
-        
     
-    xtxt = axis.get_xlim()[0] + (axis.get_xlim()[1] - axis.get_xlim()[0]) *.03
-    ytxt = .72
-    
-    axis.text(xtxt, ytxt, prop)
+
     if x_correct:
         axis.plot([x_correct,x_correct],ylim, color='green')   #"Correct" value - To use with simulations
         axis.text(xtxt, ytxt-.1, '%5.3f' % (x_correct - percentiles['50']))
 
+    if limits:
+        axis.set_xlim(limits)
+
+    xtxt = axis.get_xlim()[0] + (axis.get_xlim()[1] - axis.get_xlim()[0]) *.03
+    ytxt = .72
+    axis.text(xtxt, ytxt, prop)
 
 #def plot_model(magal_out):

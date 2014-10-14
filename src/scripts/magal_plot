@@ -47,19 +47,23 @@ def plot_fit_film(m, l, i, mask):
     
     for i_obj in range(m.N_obj):
         if mask[i_obj]:
-            plot_fit(i_obj,m,l,i, properties=['age_base'], Nlines= aux_Nlines, Nbins=aux_Nbins)
-        
-            raw_input('Press ENTER for next...')
+            plot_fit(i_obj,m,l,i, properties=['tau', 't0', 'Z', 'tau_v'], Nlines= aux_Nlines, Nbins=aux_Nbins,
+                     title= '%i - %i' % (i.properties['_id'][i_obj], i.properties['specObjID'][i_obj]))
+            #plt.title(
+
+            plt.savefig('png/K%i.png' % i.properties['_id'][i_obj])
+            #raw_input('Press ENTER for next...')
         else:
             print 'skipped by mask %i' % i_obj
 
-def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
+def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50, title=None):
     
     # 0 - Init plot figure
     plt.clf()
     if properties == None: properties = m.props 
     N_prop = len(properties)
     fig = get_mosaic(Nlines, (4 + N_prop)/Nlines,row_sep = .03, i_fig = 1)
+    fig.suptitle(title)
     i_ax = -1
     
 #    # 1 - Plot redshift
@@ -72,27 +76,54 @@ def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
     i_ax += 1
     ax = fig.axes[i_ax]
     logM = np.divide(m.s,-2.5)
-    plot_chi2(ax, 'Mass', m.likelihood[i_obj], logM[i_obj], percentiles=m.s_Mass.percentiles[i_obj], nbins = Nbins)
+    plot_chi2(ax, 'Mass = %3.2f' % m.s_Mass.AVG[i_obj], m.likelihood[i_obj], logM[i_obj], percentiles=m.s_Mass.percentiles[i_obj], nbins = Nbins,
+              limits=(8.2,11.7))
     
     # 3 - Plot fit model
     i_ax += 1
     ax = fig.axes[i_ax]    
-#     if i.z:
-    print i.z[i_obj]
-    print l.z
     aux_l = get_zslice(l, i.z[i_obj])
-#         aux_model = aux_l * m.likelihood[i_obj]
     print i_obj
+    
+    # Define few emission lines to plot.
+    # TODO: This should be stored on other side of this shit.
+    aux_labels = {'3727': '$[ O_{II} ]$', #  [\AA^{-1}]
+             '4861': '$H\\beta$',
+             '5007': '$O_{III}$',
+             '6563': '$H_\\alpha$'} #,
+#              '6584': '$\log W_{[ \\rm{N} II ]}$' }
     
     aux_model = np.tensordot(m.likelihood[i_obj], np.array([aux_l['m_ab'][i_prop] + m.s[i_obj][0][i_prop] for i_prop in range(len(aux_l))]), [1,0])[0]
 #     aux_model = aux_l[m.i_BMX[i_obj]][0]
 #     aux_model['m_ab'] += m.s[i_obj, m.i_BMX[i_obj][0], m.i_BMX[i_obj][1]] 
-    print aux_model.shape
-    print aux_model
 #     np.array([aux_l['m_ab'][i] + m.s[i_obj][0][i] for i in range(len(aux_l))]) 
-    ax.plot(l.filterset['wl_central'], i.data.value[i_obj]['m_ab'], '.', color='blue')
-    ax.errorbar(l.filterset['wl_central'], i.data.value[i_obj]['m_ab'], yerr=i.data.value[i_obj]['e_ab'], fmt=None, marker=None)
-    ax.plot(l.filterset['wl_central'], aux_model, '.', color='red')
+    ax.plot(l.filterset['wl_central'], 10**(-.4 * i.data.value[i_obj]['m_ab'])/1e-17, '.', color='blue')
+    #ax.errorbar(l.filterset['wl_central'], 10**(-.4 * i.data.value[i_obj]['m_ab']), yerr=10**(-.4 * i.data.value[i_obj]['e_ab']) - 1, fmt=None, marker=None)
+    ax.plot(l.filterset['wl_central'], 10**(-.4 * aux_model)/1e-17, '.', color='red')
+    ax.plot(l.filterset['wl_central'], 10**(-.4 * i.data.value[i_obj]['m_ab'])/1e-17 - 10**(-.4 * aux_model)/1e-17, '.', color='black') # residuum
+    #print 10**(-.4 * i.data.value[i_obj]['m_ab']) - 10**(-.4 * aux_model)
+
+    z_corr = (1.+0)/(1.+i.z[i_obj]) # (1.+toz)/(1.+fromz)
+    aux_rest_lambda = ax.get_xticks() * z_corr
+    aux_label = []
+    for l_ in aux_rest_lambda:
+        aux_label.append('%3.2f' % l_)
+    ax_aux = ax.twiny()
+    ax_aux.set_xlim(ax.get_xlim())
+    ax_aux.set_xticklabels(aux_label)
+    ylim = np.array(ax.get_ylim())
+    ylim[0] = ylim[0]- (ylim[1] * .1) 
+    ylim[1] = ylim[1]*1.1
+    for l_ in aux_labels.keys():
+        ax.plot(np.divide([int(l_),int(l_)], z_corr), ylim, '--', color='black')
+        ax.text(np.divide(int(l_), z_corr), ylim[1]*.9, aux_labels[l_], rotation='vertical', color='red')
+    ax.set_ylim(ylim[0], ylim[1])
+    
+#     for l in ax.get_xticklabels():
+#         print l
+#         print 'label', l.get_text()
+#     
+    
 #     aux_model = 
     
 #    # 3 - Plot fit model
@@ -132,7 +163,15 @@ def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
 
     
     # 4 - Plot properties
+    # Define which properties should log10 be taken.
+    # TODO: This should be stored on other side of this shit.
+    log_properties = ['age_base', 'tau', 't0', 'Z']
+    
     for prop in properties:
+        if prop in log_properties:
+            aux_log = True
+        else:
+            aux_log = False
         i_ax += 1
         ax = fig.axes[i_ax]
         
@@ -140,10 +179,11 @@ def plot_fit(i_obj, m, l, i, properties=None, Nlines = 3, Nbins=50):
             i_999 = (l.properties[str(prop)] > -998)
             plot_chi2(ax, prop, m.likelihood_T[i_obj][i_999], l.properties[str(prop)][i_999], percentiles=m.__getattribute__(prop).percentiles[i_obj], x_correct = i.properties[i_obj][prop],nbins = Nbins, log=True)
         else:
-            if prop in i.properties.value.dtype.names:
-                plot_chi2(ax, prop, m.likelihood_T[i_obj], l.properties[str(prop)], percentiles=m.__getattribute__(prop).percentiles[i_obj], x_correct = i.properties[i_obj][prop],nbins = Nbins)
+            if prop in i.properties.dtype.names:
+                print 'prop>', prop
+                plot_chi2(ax, prop, m.likelihood_T[i_obj], l.properties[str(prop)], percentiles=m.__getattribute__(prop).percentiles[i_obj], x_correct = i.properties[i_obj][prop],nbins = Nbins, log=aux_log)
             else:
-                plot_chi2(ax, prop, m.likelihood_T[i_obj], l.properties[str(prop)], percentiles=m.__getattribute__(prop).percentiles[i_obj], nbins = Nbins)
+                plot_chi2(ax, prop, m.likelihood_T[i_obj], l.properties[str(prop)], percentiles=m.__getattribute__(prop).percentiles[i_obj], nbins = Nbins, log=aux_log)
 ########
 
 
@@ -228,17 +268,23 @@ if __name__ == "__main__":
 # fsys = 'JPLUS_FS_20130118_mz'
 # ccd = '1'
 
-outfile = '/Users/william/Downloads/models/f08/model_lib_ssp_BS_magal_alhambra_RA356.0885Dec15.4679.ColorProBPZ.Prior1Peak.hdf5'
+# outfile = '/Users/william/Downloads/models/model_lib_csp_B_magal_Simulation_withSM_May13_10k.hdf5'
+#outfile = '/Users/william/Downloads/models/magal_output_F04_red_v4e_1.hdf5'
+out_file = 'MagalOutput_SDSS2.hdf5'
 db_dir = '/Users/william/Downloads/databases/'
-in_dir = '/Users/william/doutorado/Masses/'
-fsys = 'Alhambra_24'
-field = 8
-ccd = '3'
+# in_dir = '/Users/william/doutorado/Masses/COSMOS/'
+in_dir = './' #/Users/william/doutorado/Alhambra/catalogs/catalog_17072013/f04/'
+# in_dir = '/Users/william/Documents/workspace/alhambra/python_src/simul_bego'
+#fsys = 'Alhambra_24'
+fsys = 'sdss'
+field = 1
+ccd = '1'
 
-m = MagalFit(outfile)
+m = MagalFit(out_file)
 l = Library('%s/%s' % (db_dir, os.path.basename(m.attrs['lib'])) )
 #if real_data:
-i = Input('%s/f0%i/%s' % (in_dir, field, os.path.basename(m.attrs['ifile']) ) )
+# i = Input('%s/f0%i/%s' % (in_dir, field, os.path.basename(m.attrs['ifile']) ) )
+i = Input('%s/%s' % (in_dir, os.path.basename(m.attrs['ifile']) ) )
 #if simulation:
 # i = Library(m.attrs['ifile'])
 #fsys = i.get_filtersys
@@ -257,9 +303,10 @@ print l.z
 if m.N_z > 1: z_prob = np.sum(m.likelihood, axis=1)
 
 # mask = np.bitwise_and( (i.properties['zb_Max_1'] - i.properties['zb_Min_1']) < .05, i.properties.value['t_ml'] <= 4 )
-mask = i.properties['Odds_1'] > .9
-mask = np.bitwise_and(mask, i.properties.value['t_ml'] <= 4)
-mask = np.bitwise_and(mask, i.properties.value['MagPrior'] <= 24)
-mask = np.bitwise_and(mask, (i.properties['zb_Max_1'] - i.properties['zb_Min_1']) < 0.03 )
+# mask = i.properties['Odds_1'] > .9
+# mask = np.bitwise_and(mask, i.properties.value['t_ml'] <= 4)
+# mask = np.bitwise_and(mask, i.properties.value['MagPrior'] <= 24)
+# mask = np.bitwise_and(mask, (i.properties['zb_Max_1'] - i.properties['zb_Min_1']) < 0.03 )
+mask = np.ones(len(i.data))
 
 plot_fit_film(m,l,i, mask)
