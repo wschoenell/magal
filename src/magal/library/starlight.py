@@ -10,6 +10,7 @@ import atpy
 from ..core.exceptions import MAGALException
 from ..util.matchs import matchobjs
 
+import pystarlight.io
 
 __author__ = 'william'
 
