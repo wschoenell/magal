@@ -46,16 +46,19 @@ class TwoExponential(object):
         self.input_file = input_file
         self.bases_dir = bases_dir
         self.base_file = base_file
-        self.fraction_type = fraction_type  #FIXME: Add check
+        self.fraction_type = fraction_type  # FIXME: Add check
         self.lambda_norm = lambda_norm
         self._check_input()
 
         # 1 - Load data...
         # 1.1 - Input File w/ library parameters
-        dt = np.dtype([('t0_young', np.float), ('tau_young', np.float), ('t0_old', np.float), ('tau_old', np.float),
-                       ('frac_young', np.float), ('tau_v', np.float), ('Z', np.float)])
-        self.input_data = np.loadtxt(self.input_file, dtype=dt)
-        self.lib_size = len(self.input_data)
+        if isinstance(self.input_file, basestring):
+            dt = np.dtype([('t0_young', np.float), ('tau_young', np.float), ('t0_old', np.float), ('tau_old', np.float),
+                           ('frac_young', np.float), ('tau_v', np.float), ('Z', np.float)])
+            self.input_data = np.loadtxt(self.input_file, dtype=dt)
+            self.lib_size = len(self.input_data)
+        else:
+            self.input_data = self.input_file
 
         # 1.2 - STARLIGHT base file + dir.
         self.bt = atpy.Table(self.base_file, self.bases_dir, read_basedir=True, type='starlightv4_base')
@@ -63,12 +66,11 @@ class TwoExponential(object):
 
         self._wl = self.bt[0]['l_ssp']  # FIXME: Put some error handling when we have ssps w/ different wl coverages.
 
-        if self.fraction_type == 'mass':
-            self._i_norm = np.argmin((self._wl - self.lambda_norm) ** 2)
+        # if self.fraction_type == 'mass':
+        self._i_norm = np.argmin((self._wl - self.lambda_norm) ** 2)
 
         # 1.3 - Charlot & Fall 2000 reddening law. FIXME: Abstract this to use other extinction laws.
-        self.tau_l_Y, self.tau_l_O = Charlot_RedLaw(self._wl,
-                                                    mu=0.3)  # FIXME: Put some error handling when we have ssps w/ different wl coverages.
+        self.tau_l_Y, self.tau_l_O = Charlot_RedLaw(self._wl, mu=0.3)  # FIXME: Put some error handling when we have ssps w/ different wl coverages.
 
 
     def get_model_spectrum(self, i_model):
@@ -93,26 +95,26 @@ class TwoExponential(object):
             (self.input_data[i_model]['Z'] - self.bt['Z_base']) ** 2)])  # Get a mask to the desired metallicity
 
         # 1 - Init the n_component model and the output spectra
-        model = n_component(self.ages)
+        self._model = n_component(self.ages)
 
         # 2 - Add the components to our model
         # 2.1 - Young
-        model.add_exp(self.input_data[i_model]['t0_young'], self.input_data[i_model]['tau_young'], 1)
+        self._model.add_exp(self.input_data[i_model]['t0_young'], self.input_data[i_model]['tau_young'], 1)
         light_fraction = self.input_data[i_model]['frac_young']
         # 2.2 - Old
         if self.input_data[i_model]['frac_young'] < 1:
-            model.add_exp(self.input_data[i_model]['t0_old'], self.input_data[i_model]['tau_old'], 1)
+            self._model.add_exp(self.input_data[i_model]['t0_old'], self.input_data[i_model]['tau_old'], 1)
             light_fraction = [light_fraction, 1 - self.input_data[i_model]['frac_young']]
         # sfh = model.get_sfh() #TODO: Why?
 
         spec_components = []
         l_norm = []
-        for sfh_curve in model.individual_sfh_curves:
+        for sfh_curve in self._model.individual_sfh_curves:
             aux_spec = np.zeros_like(spec['flux'])
             for i in range(len(sfh_curve)):
                 if sfh_curve[i] > 0:
-                    if model.ages_start[i] <= 1e7:  # We divide the evaluation of the extinction law coefficients to
-                        # match Charlot&Fall 2000 method.
+                    if self._model.ages_start[i] <= 1e7:  # We divide the evaluation of the extinction law coefficients
+                                                          # to match Charlot&Fall 2000 method.
                         aux_spec += self.bt[flag_Z][i]['f_ssp'] * sfh_curve[i] * np.exp(
                             -self.input_data[i_model]['tau_v'] * self.tau_l_Y) / self.bt[i]['Mstars']
                     else:
@@ -124,27 +126,30 @@ class TwoExponential(object):
         if self.fraction_type == 'mass':  # If frac_young is set to be as mass fraction, then correct it.
             mass_fraction = np.array(light_fraction) / np.array(l_norm)
             mass_fraction /= np.sum(mass_fraction)
-            for i in range(len(model.individual_sfh_curves)):
+            for i in range(len(self._model.individual_sfh_curves)):
                 spec['flux'] += spec_components[i] * mass_fraction[i]
         elif self.fraction_type == 'light':
             spec['flux'] = aux_spec
 
-        return spec[np.newaxis,:]  # For CSPs, we return only the model spectrum
+        l2m_norm_ssp = [self.bt[flag_Z][i]['f_ssp'][self._i_norm] for i in range(len(self.ages))]
+        _ages = self._model.ages_end - (self._model.ages_end - self._model.ages_start) / 2
+        print 'debug>', np.shape(_ages), np.shape(l2m_norm_ssp), np.shape(self._model.get_sfh())
+        self._csp_at_flux = np.sum(self._model.get_sfh() * l2m_norm_ssp * np.log10(_ages)) / np.sum(
+            self._model.get_sfh() * l2m_norm_ssp)
+
+        return spec[np.newaxis, :]  # For CSPs, we return only the model spectrum
 
     def _check_input(self):
         if self.type != 'two_exp':
-            print('Error creating TwoExponential LibraryModel object.')
-            raise MAGALException()
+            raise MAGALException('Error creating TwoExponential LibraryModel object.')
 
-        for f_ in [self.input_file, self.base_file]:
-            if os.path.isfile(f_):
-                pass
-            else:
-                print('File %s not found or is not a file.' % f_)
-                raise MAGALException('File %s not found or is not a file.' % f_)
-        if os.path.isdir(self.bases_dir):
-            pass
-        else:
-            print('Directory %s not found or is not a directory.' % self.bases_dir)
-            raise MAGALException('File %s not found or is not a file.' % f_)
+        aux_files = [self.base_file]
+        if type(self.input_file) == basestring:
+            aux_files.append(self.input_file)
+
+        for f_ in aux_files:
+            if not os.path.isfile(f_):
+                raise IOError('File %s not found or is not a file.' % f_)
+        if not os.path.isdir(self.bases_dir):
+            raise IOError('Directory %s not found or is not a directory.' % self.bases_dir)
 
