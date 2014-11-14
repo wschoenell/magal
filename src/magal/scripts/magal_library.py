@@ -55,17 +55,23 @@ def main():
         return 1
 
     # ### ALL the configfile variables are loaded here ####
-    #TODO: Put some checking/error handling here.
+    # TODO: Put some checking/error handling here.
     config = ConfigParser.ConfigParser()
     config.read(sys.argv[1])
     libfile = os.path.expandvars(config.get('LibraryGeneral', 'library_file'))
     library_type = os.path.expandvars(config.get('LibraryGeneral', 'library_type'))
     filter_file = os.path.expandvars(config.get('LibraryGeneral', 'filter_file'))
 
-    filter_id = config.get('LibraryGeneral', 'filterset')  #TODO: Check if it is valid.
+    filter_id = config.get('LibraryGeneral', 'filterset')  # TODO: Check if it is valid.
     z_from = config.getfloat('LibraryGeneral', 'z_from')
     z_to = config.getfloat('LibraryGeneral', 'z_to')
     z_step = config.getfloat('LibraryGeneral', 'z_step')
+    try:
+        z_error = config.getfloat('LibraryGeneral', 'z_error')
+        print 'z_error is ', z_error
+    except NoOptionError:
+        z_error = None
+        print 'z_error is None'
     try:
         cosmology = ast.literal_eval(config.get('LibraryGeneral', 'cosmology'))
         from astropy.cosmology import FlatLambdaCDM
@@ -157,6 +163,15 @@ def main():
         db_vec.update({ccd: db_m})
     ### 1.2.3 - redshift
     db.create_dataset(name='/tables/z', data=z_range)
+    if z_error:
+        z_spec = np.array(
+            [np.random.normal(loc=z_range[i_z], size=LibModel.lib_size, scale=(1 + z_range[i_z]) * z_error) for i_z in
+             range(Nz)],
+            dtype=np.float)
+        z_spec[z_spec < 0.001] = 0.001  # Avoid zeroes
+        db.create_dataset(name='/tables/z_spec', data=z_spec)
+    else:
+        z_spec = None
     ### 1.2.4 - properties
     prop = db.create_dataset(name='/tables/properties', data=LibModel.input_data)
 
@@ -165,10 +180,12 @@ def main():
         if i_model % 100 == 0:
             print 'Running i_model: %i' % i_model
         for ccd in f.filtersets[filter_id]:
-            args = []
             spec = LibModel.get_model_spectrum(i_model)
-            for z in z_range:
-                args.append((spec, ccd_vec[ccd], z, cosmo))
+            if z_error:
+                aux_z = z_spec[:, i_model]
+            else:
+                aux_z = z_range
+            args = [(spec, ccd_vec[ccd], aux_z[i_z], cosmo) for i_z in range(Nz)]
             pool = Pool()
             result = pool.map(spec2filter_z, args)
             pool.close()
