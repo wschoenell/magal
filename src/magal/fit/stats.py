@@ -7,7 +7,7 @@ Created on Oct 9, 2012
 import numpy as np
 
 
-def chi2(m_o, m_l, w):
+def chi2(m_o, m_l, w=None):
     """
     Returns n_good, s and chi2 for an observed-library AB magnitude pair.
     
@@ -34,6 +34,8 @@ def chi2(m_o, m_l, w):
     chi2: array_like
           Chi-square. :math:`\\chi^2 = \\sum_l \\left( m_o(l) - m_l(l) - s_{lo}(l) \\right)^2 * w^2(l)`
     """
+    if w is None:
+        w = np.ones_like(m_o)
     mask = (m_o == np.inf) + (m_l == np.inf) + (w == 0) + np.isnan(m_o) + np.isnan(w)
     mask = np.invert(mask)
     w2 = w[mask]
