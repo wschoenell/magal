@@ -11,22 +11,17 @@ MAGAL -- Magnitudes Analyzer fitting program.
 '''
 import hashlib
 import logging
-import sys
-import os
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
-import ConfigParser
-from ConfigParser import NoSectionError, NoOptionError
-import ast
 import multiprocessing
 
+import sys
 import h5py
 import numpy as np
 import time
+from magal.core.config import MagalConfig
 
 from magal.core.log import logger
-from magal.core.version import _magal_version_, _magal_updated_
-from magal.core.exceptions import MAGALCLIError
 from magal.io.readlibrary import Library
 from magal.fit.stats import percentiles
 from magal.io.readinput import Input
@@ -51,248 +46,84 @@ def md5_for_file(f, block_size=2 ** 20):
 
 
 def main(argv=None):  # IGNORE:C0111
-    '''Command line options.'''
-
     log = logger(__name__)
+    logging.root.setLevel(logging.DEBUG)
+    log.setLevel(logging.DEBUG)
 
-#     if argv is None:
-#         argv = sys.argv
-#     else:
-#         sys.argv.extend(argv)
-#
-#     program_name = os.path.basename(sys.argv[0])
-#     program_version = "v%s" % _magal_version_
-#     program_build_date = str(_magal_updated_)
-#     program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
-#     # program_shortdesc = __import__('__main__').__doc__.split("\n")[1]
-#     program_license = '''%s
-#
-#     This program is free software: you can redistribute it and/or modify
-#     it under the terms of the GNU General Public License as published by
-#     the Free Software Foundation, either version 3 of the License, or
-#     (at your option) any later version.
-#
-#     This program is distributed in the hope that it will be useful,
-#     but WITHOUT ANY WARRANTY; without even the implied warranty of
-#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#     GNU General Public License for more details.
-#
-#     You should have received a copy of the GNU General Public License
-#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# USAGE
-# ''' % (program_shortdesc)
-
-    try:
-        # Setup argument parser
-        parser = ArgumentParser(description='', formatter_class=RawDescriptionHelpFormatter)  #FIXME: description = ???
-
-        parser.add_argument("-i", "--inputfile", dest="input", help="Input configuration", required=True)
-        parser.add_argument("-v", "--verbose", dest="verbose", action="count",
-                            help="set verbosity level [default: %(default)s]")
-        parser.add_argument('-V', '--version', action='version', version='')  #FIXME: version = ???
-
-        # Process arguments
-        args = parser.parse_args()
-        if args.verbose > 0:
-            logging.root.setLevel(logging.DEBUG)
-            log.setLevel(logging.DEBUG)
-
-        #### ALL the configfile variables are loaded here ####
-        config = ConfigParser.ConfigParser()
-        config.read(args.input)
-
-        input_file = os.path.expandvars(config.get('FitGeneral', 'input_file'))  # Input File
-        library_file = os.path.expandvars(config.get('FitGeneral', 'library_file'))  # Template ibrary File
-        output_file = os.path.expandvars(config.get('FitGeneral', 'output_file'))  # Output File
-        filter_sys = config.get('FitGeneral', 'filter_sys')  # Filtersystem (e.g. SDSS)
-        try:
-            ccd = config.get('FitGeneral', 'ccd')  # CCD number
-        except NoOptionError:
-            log.debug('Magal fit over all CCDs of inputfile!')
-            ccd = None
-
-        #Multiprocessing: Default is True.
-        try:
-            allow_multiprocessing = config.getboolean('FitGeneral', 'allow_multiprocessing')
-        except NoOptionError:
-            allow_multiprocessing = True
-
-        #If allow_overwrite is defined, we can overwrite the outputfile.
-        try:
-            allow_overwrite = config.getboolean('FitGeneral', 'allow_overwrite')
-        except NoOptionError:
-            allow_overwrite = False
-        #Check if outputfile exists and act as defined by config.
-        if os.path.exists(output_file):
-            if allow_overwrite:
-                try:
-                    os.unlink(output_file)
-                except:
-                    log.error(u'Cannot DELETE file {0:s}.'.format(output_file))
-                    return 1
-            else:
-                log.error(u'File {0:s} already exists.'.format(output_file))
-                return 1
-
-        # Look if there is a filter list to include.
-        try:
-            filters_include = ast.literal_eval(config.get('FitGeneral', 'filters_include'))
-        except NoOptionError:
-            log.debug('Fitting for all the filters.')
-            filters_include = None
-        try:
-            filters_exclude = ast.literal_eval(config.get('FitGeneral', 'filters_exclude'))
-        except NoOptionError:
-            log.debug('Fitting for all the filters.')
-            filters_exclude = None
-
-        if filters_include is not None and filters_exclude is not None:
-            print 'Error. You cannot have filters_include and filters_exclude Config Options at the same time.'
-            return 1
-
-        try:
-            zp_error = ast.literal_eval(config.get('FitGeneral', 'zp_error'))
-        except:
-            zp_error = None
-            log.warn('zp_error is not defined on the .ini file!')
-
-
-        # Look if there is a maximum number of objects to run. This is useful for testing.
-        try:
-            Nobj_max = config.getint('FitGeneral', 'Nobj_max')
-        except NoOptionError:
-            Nobj_max = 0
-            log.info('Running magal fit to ALL objects.')
-
-        # Cooking factor. It is multiplied by the chi2 in order to increase the effectiveness of each template
-        # on the likelihood.
-        try:
-            cooking_factor = config.getfloat('FitGeneral', 'cooking_factor')
-            log.info('Found a cooking_factor option. \chi^2 will be multiplied by %3.2f' % cooking_factor)
-        except NoOptionError:
-            cooking_factor = None
-
-
-        # Check if the user request a simulation. For a simulation, the inputfile will be a Library template file.
-        try:
-            is_simulation = config.getboolean('FitSimulation', 'is_simulation')  # Is this a simulation?
-            if is_simulation:
-                try:
-                    obj_z = config.getfloat('FitSimulation', 'obj_z')
-                    log.info('Using z = %s from inputfile on this simulation.' % config.getfloat('FitSimulation', 'obj_z'))
-                except NoOptionError:
-                    obj_z = False
-                    log.info('Using z from inputfile tables.')
-                try:
-                    mass_field = config.get('FitSimulation', 'mass_field')
-                except NoOptionError:
-                    log.info('When running a simulation, you must specify a table field for the mass.')
-                    sys.exit(1)
-            else:
-                mass_field = None
-        except NoSectionError:
-            is_simulation = False  # If there is no [FitSimulation] on config, just ignore this.
-
-        try:
-            Nz = config.getboolean('FitGeneral', 'Nz')  # If True, will fit at z = const.
-            # Redshift will be get from inputfile property z.
-        except NoOptionError:
-            if is_simulation:
-                Nz = False
-            else:
-                log.info('Evaluating for all redshift space!')
-        ########
-
-    except KeyboardInterrupt:
-        print 'CTRL+C pressed... exiting...'  #TODO: move this to the logger.
-        return 0
-
-    except Exception, e:
-        if DEBUG or TESTRUN:
-            raise (e)
-        # indent = len(program_name) * " "  #FIXME:
-        # sys.stderr.write(program_name + ": " + repr(e) + "\n")  #FIXME:
-        # sys.stderr.write(indent + "  for help use --help")  #FIXME:
-        return 2
+    ini_file = sys.argv[1]
+    config = MagalConfig(ini_file, 'fit')
+    if config.ret > 0:
+        return config.ret
 
     t0 = time.time()
 
     # - Init outputfile
     try:
-        f = h5py.File(output_file, mode='w-')
+        f = h5py.File(config.output_file, mode='w-')
     except IOError:
-        raise MAGALCLIError(u'File {0:s} already exists or could not be created.'.format(output_file))
+        print(u'File {0:s} already exists or could not be created.'.format(config.output_file))
+        return 1
 
     # 2.2 - Define some auxiliar data...
-    f.attrs.create('input_file', input_file)
-    f.attrs.create('input_md5', md5_for_file(input_file))  # Store Inputfile MD5SUM
-    f.attrs.create('library_file', library_file)
-    f.attrs.create('library_md5', md5_for_file(library_file))  # Store Library MD5SUM
-    # f.attrs.create('magal_type', magal_type)
-    # f.attrs.create('magal_version', '%s - %s' % (program_name, program_version))  #FIXME:
+    f.attrs.create('input_file', config.input_file)
+    f.attrs.create('input_md5', md5_for_file(config.input_file))  # Store Inputfile MD5SUM
+    f.attrs.create('library_file', config.library_file)
+    f.attrs.create('library_md5', md5_for_file(config.library_file))  # Store Library MD5SUM
 
     # Write full .ini file on model outputfile.
-    aux_ini = open(args.input, 'r').read()
+    aux_ini = open(ini_file).read()
     ds = f.create_dataset('/ini_file', shape=(1,), dtype=h5py.new_vlen(str))
     ds[:] = aux_ini
     ###
 
     # 1 - Load files
     # 1.1 - Inputfile
-    if is_simulation:  # If this is a simulation, a Library will be the inputfile.
-        inp = Library(input_file)
-        magal_type = 'simulation'
+    if config.is_simulation:  # If this is a simulation, a Library will be the inputfile.
+        inp = Library(config.input_file)
     else:
-        inp = Input(input_file)
-        # try:
-        #     inp.get_filtersys(filter_sys, ccd)  # TODO: Accept multiple CCDs on one inputfile.
-        # except KeyError:
-        #     raise MAGALCLIError('Data not found! Are you sure that you do not want to Simulate?')
-        magal_type = 'data'
+        inp = Input(config.input_file)
 
-    if ccd is None:
+    if config.ccd is None:
         ccds = inp.ccds
     else:
-        ccds = [ccd]
+        ccds = [config.ccd]
 
     # Run fit over all CCDs...
     for ccd in ccds:
-        log.debug('Running magal_fit on %s/%s' % (filter_sys, ccd))
-        inp.get_filtersys(filter_sys, ccd)
+        log.debug('Running magal_fit on %s/%s' % (config.filter_sys, ccd))
+        inp.get_filtersys(config.filter_sys, ccd)
 
         # 1.2 - Library
-        lib = Library(library_file)
-        lib.get_filtersys(filter_sys, ccd)
+        lib = Library(config.library_file)
+        lib.get_filtersys(config.filter_sys, ccd)
 
         # 1.3 - Get objectlist
-        if is_simulation:
-            o_list = get_zslice(inp, obj_z)  # Need to get selected redshift from the library
+        if config.is_simulation:
+            o_list = get_zslice(inp, config.obj_z)  # Need to get selected redshift from the library
         else:
             o_list = inp.data
 
-        if Nobj_max > 0:
-            o_list = o_list[:Nobj_max]
-            if args.verbose:
-                log.info('Running magal fit to ONLY %i objects.' % Nobj_max)
-        elif args.verbose:
+        if config.Nobj_max > 0:
+            o_list = o_list[:config.Nobj_max]
+            log.info('Running magal fit to ONLY %i objects.' % config.Nobj_max)
+        else:
             log.info('Running magal fit to ALL objects.')
 
         N_obj = len(o_list)
 
-        if is_simulation:
-            if mass_field is not None:
-                mass_field = inp.properties[mass_field][:N_obj]  # Multiply by the mass_field.
+        if config.is_simulation:
+            if config.mass_field is not None:
+                config.mass_field = inp.properties[config.mass_field][:N_obj]  # Multiply by the mass_field.
 
         # 2 - Output file
         # 2.3 - Data matrices
         # 2.3.1 - Shape is defined by (N_obj, N_z, N_lib)
-        if Nz or (is_simulation and obj_z):
+        if config.Nz or (config.is_simulation and config.obj_z):
             N_z, N_tpl = (1, lib.library.shape[1])  # If the redshift comes from inputfile, N_z = 1.
             log.debug('Fitting only over ONE redshift!')
-        if is_simulation and obj_z:
-            inp_z = [obj_z]
-        elif Nz:
+        if config.is_simulation and config.obj_z:
+            inp_z = [config.obj_z]
+        elif config.Nz:
             inp_z = inp.z
         else:
             N_z, N_tpl = lib.library.shape[:2]
@@ -312,34 +143,36 @@ def main(argv=None):  # IGNORE:C0111
         lib_stats_grp = f.create_group('%s/statistics/library' % lib.path)  # Library likelihood statistics
 
         # 3 - Fit
-        if filters_include is not None:
-            filterset_mask = np.sum([k == lib.filterset['ID_filter'] for k in filters_include], axis=0, dtype=np.bool)
-            if filterset_mask.sum() != len(filters_include):
+        if config.filters_include is not None:
+            filterset_mask = np.sum([k == lib.filterset['ID_filter'] for k in config.filters_include], axis=0, dtype=np.bool)
+            if filterset_mask.sum() != len(config.filters_include):
                 log.error(
                     'Unable to include all filters of filter_include Config Option.\n\tfilters are: %s\n' +
-                    '\tfilters_include are: %s' % (lib.filterset['ID_filter'], filters_include))
+                    '\tfilters_include are: %s' % (lib.filterset['ID_filter'], config.filters_include))
                 return 1
-        elif filters_exclude is not None:
-            filterset_mask = ~np.sum([k == lib.filterset['ID_filter'] for k in filters_exclude], axis=0, dtype=np.bool)
-            if (~filterset_mask).sum() != len(filters_exclude):
+        elif config.filters_exclude is not None:
+            filterset_mask = ~np.sum([k == lib.filterset['ID_filter'] for k in config.filters_exclude], axis=0, dtype=np.bool)
+            if (~filterset_mask).sum() != len(config.filters_exclude):
                 log.error(  #FIXME: TypeError: not all arguments converted during string formatting.
                     'Unable to include all filters of filter_exclude Config Option.\n\tfilters are: %s\n' +
                     '\tfilters_exclude are: %s' %
-                    (', '.join(lib.filterset['ID_filter']), ', '.join(filters_exclude)))
+                    (', '.join(lib.filterset['ID_filter']), ', '.join(config.filters_exclude)))
                 return 1
         else:
             filterset_mask = np.ones(len(lib.filterset), dtype=np.bool)
 
         # 3.3 - Eval \chi^2
-        if is_simulation:
-            params = chi2_parameters(Nz, is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask, lib, mass_field, zp_error)
+        if config.is_simulation:
+            params = chi2_parameters(config.Nz, config.is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask,
+                                     lib, config.mass_field, config.zp_error)
         else:
-            params = chi2_parameters(Nz, is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask, lib, None, zp_error)
+            params = chi2_parameters(config.Nz, config.is_simulation, o_list, N_obj, N_z, N_tpl, inp_z, filterset_mask,
+                                     lib, None, config.zp_error)
         n_cpu = multiprocessing.cpu_count()
         if n_cpu > N_obj:
             map_function = map
             log.info('There is less objects than CPUs. Not using multiprocessing...')
-        elif allow_multiprocessing:
+        elif config.allow_multiprocessing:
             pool = multiprocessing.Pool()
             map_function = pool.imap
             log.debug('Started pool with %i processors.' % n_cpu)
@@ -354,8 +187,8 @@ def main(argv=None):  # IGNORE:C0111
         # 4 - From \chi^2, eval likelihood
         # 4.1 - Likelihood
         log.debug('Calculating Likelihood. t = %3.2f' % (time.time() - t0))
-        if cooking_factor:
-            l = np.exp(-0.5 * cooking_factor * (np.subtract(chi2_ds, np.min(chi2_ds, axis=2).reshape((N_obj, N_z, 1)))))
+        if config.cooking_factor:
+            l = np.exp(-0.5 * config.cooking_factor * (np.subtract(chi2_ds, np.min(chi2_ds, axis=2).reshape((N_obj, N_z, 1)))))
         else:
             l = np.exp(-0.5 * (np.subtract(chi2_ds, np.min(chi2_ds, axis=2).reshape((N_obj, N_z, 1)))))
 
