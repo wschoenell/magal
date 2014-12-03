@@ -1,0 +1,143 @@
+#!/usr/bin/env python
+import os
+import sys
+import emcee
+from magal.fit.stats import chi2, chi2_index
+from magal.index.lick import LickIndex
+from magal.io.readfilterset import FilterSet
+from magal.io.readlibrary import Library
+from magal.library import LibraryModel
+from magal.photometry.syntphot import spec2filterset
+from magal.scripts.magal_fit import main_emcee
+from astropy import units
+from astropy.cosmology import WMAP9 as cosmo
+from magal.util.cosmo import zcor
+
+import numpy as np
+
+
+def mag_in_z(spec, z, f):
+    d_L = cosmo.luminosity_distance(z).to('cm')
+    k_cosmo = units.Lsun.to('erg/s') / (4 * np.pi * np.power(d_L, 2))
+
+    model_spec = zcor(spec, z)
+    model_spec['flux'] *= k_cosmo
+    x = spec2filterset(f.filterset, model_spec)
+
+    return x
+
+base_path = 'Base.bc03.Padova1994.chab.All'
+base_file = '%s/BasesDir/Base.bc03.Padova1994.chab.All.hdf5' % os.environ.get('HOME')
+
+f = FilterSet('/Users/william/doutorado/photo_filters/sdss_ugriz.hdf5')
+f.load('sdss', 1)
+
+l = Library('/Users/william/databases/test_lib_starlight_sdss.hdf5')
+l.get_filtersys('sdss', 1)
+
+redshift = l.z[1]
+
+class Model(object):
+
+    def __init__(self, m_obs, i_obs=None):
+        self.m_obs = m_obs
+        self.i_obs = i_obs
+        # Our model is defined in theta, not in tau!
+        self.prior = {'t0_young': (np.log10(6e6), np.log10(5e9)),  # t0 for the younger component
+                      'theta_young': np.log10([0.001, 1000]),      # Theta for the younger component
+                      't0_old': (np.log10(1e9), np.log10(14e9)),   # t0 for the older component
+                      'theta_old': np.log10([0.001, 1000]),        # Theta for the older component
+                      'frac_young': [0, 1],                        # Percentage of the young component
+                      'tau_v': [0, 2]} #,                             # Charlot&Fall 2000 tau_v interval
+                      # 'Z': [0.02, 0.02]}                           # Metallicity If [], it will use all base metallicities
+
+        self.parameters = sorted(self.prior.keys())
+
+        self._dt = np.dtype([('t0_young', np.float), ('tau_young', np.float), ('t0_old', np.float), ('tau_old', np.float),
+           ('frac_young', np.float), ('tau_v', np.float), ('Z', np.float)])
+        self._lib = LibraryModel('two_exp', np.empty(1, dtype=self._dt), base_path, base_file, 'light', 4020.)
+        self._Index = LickIndex()
+        self.ages = []
+
+    def theta2tau(self, p):
+        """
+        Converts parametric model (t0, theta) --> (t0, tau)
+        """
+        out = {}
+        i_param = 0
+        for key in self.parameters:
+            out[key] = p[i_param]
+            i_param += 1
+        out['tau_young'] = out['t0_young'] * 10**out.pop('theta_young')
+        out['tau_old'] = out['t0_old'] * 10**out.pop('theta_old')
+
+        return out
+
+    def get_p0(self):
+        """
+        Returns a random p0 starting guess
+        """
+        out = {}
+        for key in self.prior.keys():
+            out[key] = self.prior[key][0] + np.random.rand() * (self.prior[key][1] - self.prior[key][0])
+
+        return [out[k] for k in sorted(out)]
+
+    def get_model_spec(self, p_theta):
+        for key, value in self.theta2tau(p_theta).iteritems():
+            self._lib.input_data[0][key] = value
+        self._lib.input_data[0]['Z'] = 0.02
+        return self._lib.get_model_spectrum(0)
+
+    def get_model_magnitudes(self, p):
+        return mag_in_z(m.get_model_spec(p), redshift, f)
+
+    def lnprior(self, p):
+        i_param = 0
+        for key in self.parameters:
+            if p[i_param] < self.prior[key][0] or p[i_param] > self.prior[key][1]:
+                return -np.inf
+            i_param += 1
+        return 0
+
+    def lnprob(self, p):
+        if np.isfinite(self.lnprior(p)):
+            return -0.5 * self.chi2(p)
+        else:
+            return -np.inf
+
+    def chi2(self, p):
+        mags = self.get_model_magnitudes(p)
+        return chi2(self.m_obs, mags['m_ab'])[2]
+
+
+conf_indexes = ['H_beta', 'MgFe', 'D4000']
+conf_indexes.sort()
+m = Model(l.library[1, 1]['m_ab']) #0,0)
+
+
+nwalkers = 40
+p0 = [m.get_p0() for p0 in range(nwalkers)]
+ndim = len(p0[0])
+
+sampler = emcee.EnsembleSampler(nwalkers, ndim, m.lnprob)
+sampler.run_mcmc(p0, 1000)
+#
+import triangle
+samples = sampler.chain[:, 50:, :].reshape((-1, ndim))
+fig = triangle.corner(samples, labels=m.parameters)  #,
+                      # truths=[m_true, b_true, np.log(f_true)])
+
+# /spec = m.get_model_spec(p0)
+#
+# indexes = Index.lick_index(conf_indexes, spec['wl'][0], spec['flux'][0])
+#
+# print chi2(l.library[1, 1]['m_ab'], mags['m_ab']) + 0 #chi2_index(indexes['index'], i_m['error'])
+
+ #
+ # def lnprob(p):
+ #
+ #     return -0.5
+
+# if __name__ == "__main__":
+#     sys.exit(main_emcee())
