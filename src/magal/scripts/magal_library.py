@@ -17,6 +17,7 @@ import sys
 from astropy import units
 import h5py
 import numpy as np
+from magal.index.lick import LickIndex
 
 from magal.library import LibraryModel
 from magal.io.readfilterset import FilterSet
@@ -110,14 +111,25 @@ def main():
         except NoOptionError:
             lambda_norm = 4020
         LibModel = LibraryModel(library_type, inp_file, basedir, basefile, fraction_type, lambda_norm)  # Init
-    # 2 - STARLIGHT library parameters:
+    # 2 - Two-exponential library w/ random parameters
+    elif library_type == 'two_exp_random':
+        inp_file = os.path.expandvars(config.get('LibraryParameters', 'input_file'))
+        basedir = os.path.expandvars(config.get('LibraryParameters', 'bases_dir'))
+        basefile = os.path.expandvars(config.get('LibraryParameters', 'base_file'))
+        fraction_type = config.get('LibraryParameters', 'fraction_type')  # light or mass
+        try:
+            lambda_norm = config.getfloat('LibraryParameters', 'lambda_norm')  # mass normalization wl
+        except NoOptionError:
+            lambda_norm = 4020
+        LibModel = LibraryModel(library_type, inp_file, basedir, basefile, fraction_type, lambda_norm)  # Init
+    # 3 - STARLIGHT library parameters:
     elif library_type == 'starlight_sdss':
-        type = 'starlight_sdss'
+        library_type = 'starlight_sdss'
         inp_file = os.path.expandvars(config.get('LibraryParameters', 'input_file'))
         tables_dir = os.path.expandvars(config.get('LibraryParameters', 'tables_dir'))
         input_dir = os.path.expandvars(config.get('LibraryParameters', 'input_dir'))
         output_dir = os.path.expandvars(config.get('LibraryParameters', 'output_dir'))
-        LibModel = LibraryModel(type, inp_file, tables_dir, input_dir, output_dir, cosmo)
+        LibModel = LibraryModel(library_type, inp_file, tables_dir, input_dir, output_dir, cosmo)
 
     #### -- ####
 
@@ -175,12 +187,34 @@ def main():
     ### 1.2.4 - properties
     prop = db.create_dataset(name='/tables/properties', data=LibModel.input_data)
 
+    ### 1.2.5 - indexes
+    try:
+        conf_indexes = ast.literal_eval(config.get('LibraryGeneral', 'indexes'))
+        conf_indexes.sort()
+        N_indexes = len(conf_indexes)
+        dt = np.dtype([('index', '<f4'), ('error', '<f4')])
+        indexes = np.empty(shape=(LibModel.lib_size, N_indexes), dtype=dt)
+        Index = LickIndex()
+        calc_index = True
+    except NoOptionError:
+        print 'caca'
+        calc_index = False
+        pass
+
+
+
     # 2 - RUN!
     for i_model in range(LibModel.lib_size):
         if i_model % 100 == 0:
             print 'Running i_model: %i' % i_model
         for ccd in f.filtersets[filter_id]:
             spec = LibModel.get_model_spectrum(i_model)
+            if calc_index:
+                aux = Index.lick_index(conf_indexes, spec[1]['wl'], spec[1]['flux'])
+                for i_index in range(len(conf_indexes)):
+                    indexes[i_model, i_index]['index'] = np.float32(aux[np.sort(conf_indexes)[i_index]][0])
+                    indexes[i_model, i_index]['error'] = np.float32(aux[np.sort(conf_indexes)[i_index]][1])
+                calc_index = False
             if z_error:
                 aux_z = z_spec[:, i_model]
             else:
@@ -191,6 +225,9 @@ def main():
             pool.close()
             pool.join()
             db_vec[ccd][:, i_model, :] = result
+
+    # caca = db.create_dataset(name='/tables/spectral_indexes', data=indexes)
+    # caca.attrs.create(name='index_names', data=conf_indexes)
 
     print 'Finished calculating magnintudes.'
 

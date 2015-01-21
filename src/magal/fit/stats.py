@@ -50,6 +50,16 @@ def chi2(m_o, m_l, w=None):
     # return n_good, s, np.sum(np.power(dm - s, 2) * w2) # n_good, s, chi2
     return n_good, s, n_good * np.sum(np.power(dm - s, 2) * w2) / n_total  # n_good, s, chi2
 
+def chi2_index(i_o, i_l, w=None):
+    '''
+    FIXME: docme
+    '''
+    if w is None:
+        w = np.ones_like(i_o)
+    mask = np.isnan(i_o) + np.isnan(i_l)
+    mask = np.invert(mask)
+
+    return 0
 
 def percentiles(x, y, perc):
     """

@@ -18,6 +18,8 @@ import sys
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+import time
+
 sys.path.insert(0, os.path.abspath('sphinxext'))
 sys.path.insert(0, os.path.abspath('../../src/'))
 sys.path.insert(0, os.path.abspath('../../../pystarlight/src'))
@@ -48,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'magal'
-copyright = u'2012, William Schoenell'
+copyright = u'%s, William Schoenell' % time.strftime('%Y')
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

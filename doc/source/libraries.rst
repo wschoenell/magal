@@ -2,7 +2,9 @@
 Making Magal Libraries
 ----------------------
 
-bla bla bla
+In this section you will find how to create a template library. The template libraries are necessary to do simulations
+and when using ``magal_fit`` on the normal ``brute`` force fitting. For now, there are three types of model libraries:
+``spectral``, ``two_exp`` and ``starlight``.
 
 * Run ``magal_library library.ini``
 

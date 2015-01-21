@@ -281,3 +281,9 @@ def main(argv=None):  # IGNORE:C0111
     f.close()
 
     log.info('Finished. Took %3.2f seconds.' % (time.time() - t0))
+
+    return 0
+
+def main_emcee():
+
+    return 0

@@ -89,7 +89,7 @@ class LickIndex(object):
 
         return aux_return
 
-    def lick_index(self, indexes, spec_lambda, spec_flux, spec_error, spec_flags=None, v0=0, instrument_res=0, vd=0,
+    def lick_index(self, indexes, spec_lambda, spec_flux, spec_error=None, spec_flags=None, v0=0, instrument_res=0, vd=0,
                    instrument_res_final=6, vd_final=357):
         """
         Calculate lick indexes on the input spectrum.

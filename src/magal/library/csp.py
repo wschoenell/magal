@@ -4,6 +4,7 @@ import os
 
 import atpy
 from pystarlight.util.redenninglaws import Charlot_RedLaw
+from pystarlight.util.base import StarlightBase
 import numpy as np
 
 from ..core.exceptions import MAGALException
@@ -15,7 +16,7 @@ class TwoExponential(object):
     A simple library w/ two exponential decaying components.
     """
 
-    def __init__(self, library_type, input_file, bases_dir, base_file, fraction_type, lambda_norm=4020.):
+    def __init__(self, library_type, input_file, base_path, base_file, fraction_type, lambda_norm=4020.):
         """
         A simple library w/ two exponential decaying components.
 
@@ -44,7 +45,7 @@ class TwoExponential(object):
         # 0 - Check if all the parameters are okay.
         self.type = library_type
         self.input_file = input_file
-        self.bases_dir = bases_dir
+        self.base_path = base_path
         self.base_file = base_file
         self.fraction_type = fraction_type  # FIXME: Add check
         self.lambda_norm = lambda_norm
@@ -56,15 +57,16 @@ class TwoExponential(object):
             dt = np.dtype([('t0_young', np.float), ('tau_young', np.float), ('t0_old', np.float), ('tau_old', np.float),
                            ('frac_young', np.float), ('tau_v', np.float), ('Z', np.float)])
             self.input_data = np.loadtxt(self.input_file, dtype=dt)
-            self.lib_size = len(self.input_data)
         else:
             self.input_data = self.input_file
 
-        # 1.2 - STARLIGHT base file + dir.
-        self.bt = atpy.Table(self.base_file, self.bases_dir, read_basedir=True, type='starlightv4_base')
-        self.ages = np.unique(self.bt['age_base'])
+        self.lib_size = len(self.input_data)
 
-        self._wl = self.bt[0]['l_ssp']  # FIXME: Put some error handling when we have ssps w/ different wl coverages.
+        # 1.2 - STARLIGHT base file + dir.
+        self.bt = StarlightBase(self.base_file, self.base_path) #atpy.Table(self.base_file, self.bases_dir, read_basedir=True, type='starlightv4_base')
+        self.ages = np.unique(self.bt.ageBase)
+
+        self._wl = self.bt.l_ssp  # FIXME: Put some error handling when we have ssps w/ different wl coverages.
 
         # if self.fraction_type == 'mass':
         self._i_norm = np.argmin((self._wl - self.lambda_norm) ** 2)
@@ -89,10 +91,9 @@ class TwoExponential(object):
         """
 
         # 0 - Init some vars and flags
-        spec = np.zeros(shape=np.shape(self.bt[0]['f_ssp']), dtype=np.dtype([('wl', np.float), ('flux', np.float)]))
+        spec = np.zeros(shape=self.bt.f_ssp.shape[2], dtype=np.dtype([('wl', np.float), ('flux', np.float)]))
         spec['wl'] = self._wl
-        flag_Z = (self.bt['Z_base'] == self.bt['Z_base'][np.argmin(
-            (self.input_data[i_model]['Z'] - self.bt['Z_base']) ** 2)])  # Get a mask to the desired metallicity
+        i_met = int(np.argwhere(self.bt.metBase == self.input_data[i_model]['Z']))  # Get a mask to the desired metallicity
 
         # 1 - Init the n_component model and the output spectra
         self._model = n_component(self.ages)
@@ -111,29 +112,28 @@ class TwoExponential(object):
         l_norm = []
         for sfh_curve in self._model.individual_sfh_curves:
             aux_spec = np.zeros_like(spec['flux'])
-            for i in range(len(sfh_curve)):
-                if sfh_curve[i] > 0:
-                    if self._model.ages_start[i] <= 1e7:  # We divide the evaluation of the extinction law coefficients
+            for i_age in range(len(sfh_curve)):
+                if sfh_curve[i_age] > 0:
+                    if self._model.ages_start[i_age] <= 1e7:  # We divide the evaluation of the extinction law coefficients
                                                           # to match Charlot&Fall 2000 method.
-                        aux_spec += self.bt[flag_Z][i]['f_ssp'] * sfh_curve[i] * np.exp(
-                            -self.input_data[i_model]['tau_v'] * self.tau_l_Y) / self.bt[i]['Mstars']
+                        aux_spec += self.bt.f_ssp[i_met, i_age] * sfh_curve[i_age] * np.exp(
+                            -self.input_data[i_model]['tau_v'] * self.tau_l_Y) / self.bt.Mstars[i_met, i_age]
                     else:
-                        aux_spec += self.bt[flag_Z][i]['f_ssp'] * sfh_curve[i] * np.exp(
-                            -self.input_data[i_model]['tau_v'] * self.tau_l_O) / self.bt[i]['Mstars']
+                        aux_spec += self.bt.f_ssp[i_met, i_age] * sfh_curve[i_age] * np.exp(
+                            -self.input_data[i_model]['tau_v'] * self.tau_l_O) / self.bt.Mstars[i_met, i_age]
             l_norm.append(aux_spec[self._i_norm])
             spec_components.append(aux_spec)
 
         if self.fraction_type == 'mass':  # If frac_young is set to be as mass fraction, then correct it.
             mass_fraction = np.array(light_fraction) / np.array(l_norm)
             mass_fraction /= np.sum(mass_fraction)
-            for i in range(len(self._model.individual_sfh_curves)):
-                spec['flux'] += spec_components[i] * mass_fraction[i]
+            for i_age in range(len(self._model.individual_sfh_curves)):
+                spec['flux'] += spec_components[i_age] * mass_fraction[i_age]
         elif self.fraction_type == 'light':
             spec['flux'] = aux_spec
 
-        l2m_norm_ssp = [self.bt[flag_Z][i]['f_ssp'][self._i_norm] for i in range(len(self.ages))]
+        l2m_norm_ssp = [self.bt.f_ssp[i_met, i_age, self._i_norm] for i_age in range(len(self.ages))]
         _ages = self._model.ages_end - (self._model.ages_end - self._model.ages_start) / 2
-        print 'debug>', np.shape(_ages), np.shape(l2m_norm_ssp), np.shape(self._model.get_sfh())
         self._csp_at_flux = np.sum(self._model.get_sfh() * l2m_norm_ssp * np.log10(_ages)) / np.sum(
             self._model.get_sfh() * l2m_norm_ssp)
 
@@ -150,6 +150,6 @@ class TwoExponential(object):
         for f_ in aux_files:
             if not os.path.isfile(f_):
                 raise IOError('File %s not found or is not a file.' % f_)
-        if not os.path.isdir(self.bases_dir):
-            raise IOError('Directory %s not found or is not a directory.' % self.bases_dir)
+        # if not os.path.isdir(self.base_path):
+        #     raise IOError('Directory %s not found or is not a directory.' % self.base_path)
 

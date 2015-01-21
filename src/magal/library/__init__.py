@@ -10,7 +10,7 @@ class LibraryModel(object):
     '''
 
     def __init__(self, type, *kwargs):
-        if type == 'two_exp':
+        if type.startswith('two_exp'):
             self.__class__ = TwoExponential
             self.__init__(type, *kwargs)
         if type == 'starlight_sdss':

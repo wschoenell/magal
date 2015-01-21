@@ -1,9 +1,9 @@
 Making input file
 -----------------
 
-To standarize the input to magal, we have to transform the input files (in ASCII, for example) to
- magal HDF5 files. This is done by running ``magal_input config_file.ini`` script. The configuration
- file is described on the following section.
+To standarize the input to magal, we have to transform the input files (in ASCII, for example) to magal HDF5 files.
+This is done by running ``magal_input config_file.ini`` script.
+The configuration file is described on the following section.
 
 Ini file keywords
 ^^^^^^^^^^^^^^^^^

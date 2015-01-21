@@ -16,6 +16,9 @@ Ini file keywords
 
 Section : ``[FitGeneral]``
 
+* ``fit_mode`` : string. Optional. Default: brute. Fitting mode: ``brute`` for common magal fitting and ``emcee`` for
+  MCMC fit. If ``emcee``, it will override ``input_file`` and use the model defined in the ``[EmceeModel]`` section.
+
 * ``input_file`` : string. Input filename.
 
 * ``library_file`` : string. Library filename.
@@ -43,7 +46,7 @@ Section : ``[FitGeneral]``
 
 * ``fudge_factor`` :
 
-Section : ``[FitGeneral]`` . Optional.
+Section : ``[FitSimulation]`` . Optional.
 
 * ``is_simulation`` : bool
 
@@ -52,7 +55,35 @@ Section : ``[FitGeneral]`` . Optional.
 * ``mass_field`` :
 
 
+Section : ``[EmceeModel]`` . Optional.
+
+* ``model_type`` : string. Only model type available now is ``two_exp``. ``two_exp`` model is defined by FIXME: :math:`\lambda`
+
+* ``model_prior`` : dict. Model prior definition. ``two_exp`` prior is in the form of a dictionary like:
+
+.. code-block:: python
+
+    {'property': [min, max]}
+
+
+``two_exp`` model defaults:
+
+.. code-block:: python
+
+    {'t0_young': (np.log10(6e6), np.log10(5e9)),  # t0 for the younger component
+     'theta_young': np.log10([0.001, 1000]),      # Theta for the younger component
+     't0_old': (np.log10(1e9), np.log10(14e9)),   # t0 for the older component
+     'theta_old': np.log10([0.001, 1000]),        # Theta for the older component
+     'frac_young': [0, 1],                        # Percentage of the young component
+     'tau_v': [0, 2],                             # Charlot&Fall 2000 tau_v interval
+     'Z': []}                                     # Metallicity If [], it will use all base metallicities
+
+
 Example: NONONON
 ^^^^^^^^^^^^^^^^
 
 aa
+
+Example: Fitting using ``emcee``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
