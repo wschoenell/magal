@@ -29,8 +29,8 @@ class TwoExponential(object):
             Base models input filename. The file must be an ascii file with this 7 ``float`` the columns:
             ``t0_young, tau_young, t0_old, tau_old, frac_young, tau_v, Z``
 
-        bases_dir : string
-            Directory where the models files are.
+        base_path : string
+            Directory where the models files are. In case base_file is a hdf5 file, this is the path on hdf5 to the lib.
 
         base_file : string
             Starlight-like base filename.

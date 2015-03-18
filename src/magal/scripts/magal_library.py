@@ -124,13 +124,16 @@ def main():
         LibModel = LibraryModel(library_type, inp_file, basedir, basefile, fraction_type, lambda_norm)  # Init
     # 3 - STARLIGHT library parameters:
     elif library_type == 'starlight_sdss':
-        library_type = 'starlight_sdss'
         inp_file = os.path.expandvars(config.get('LibraryParameters', 'input_file'))
         tables_dir = os.path.expandvars(config.get('LibraryParameters', 'tables_dir'))
         input_dir = os.path.expandvars(config.get('LibraryParameters', 'input_dir'))
         output_dir = os.path.expandvars(config.get('LibraryParameters', 'output_dir'))
         LibModel = LibraryModel(library_type, inp_file, tables_dir, input_dir, output_dir, cosmo)
-
+    # 4 - Simple Stellar Population library
+    elif library_type == 'ssp':
+        basefile = os.path.expandvars(config.get('LibraryParameters', 'base_file'))
+        basepath = os.path.expandvars(config.get('LibraryParameters', 'base_path'))
+        LibModel = LibraryModel(library_type, basefile, basepath)
     #### -- ####
 
     # 0 - Library Parameters

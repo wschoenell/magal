@@ -183,5 +183,10 @@ class n_component(object):  # Define a N-component SFH vector.
             x = self.ages
         for i_sfh in range(len(self.individual_sfh_curves)):
             plt.plot(x, self.individual_sfh_curves[i_sfh], label='Curve %s' % np.int(i_sfh))
-        plt.plot(x, self.get_sfh(), label='Total SFH curve')
-        plt.legend()
+        plt.plot(x, self.get_sfh(), lw=2, alpha=0.8, label='Total SFH curve')
+        plt.legend(loc=2)
+        if log:
+            plt.xlabel('$\log t$')
+        else:
+            plt.xlabel('$t$')
+        plt.ylabel('SFH')

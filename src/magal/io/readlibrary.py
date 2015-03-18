@@ -42,8 +42,11 @@ class Library(object):
                 self.ccds[fid] = self._lib['/%s' % fid].keys()
         self.z = np.copy(self._lib['/tables/z'].value)
         self.properties = np.copy(self._lib['/tables/properties'].value)
-        self.spectral_indexes = np.copy(self._lib['/tables/spectral_indexes'].value)
-        self.spectral_indexes_names = np.copy(self._lib['/tables/spectral_indexes'].attrs['index_names'])
+        try:
+            self.spectral_indexes = np.copy(self._lib['/tables/spectral_indexes'].value)
+            self.spectral_indexes_names = np.copy(self._lib['/tables/spectral_indexes'].attrs['index_names'])
+        except KeyError:
+            pass  # print 'Skipping spectral indexes'
         self._lib_isclosed = False
 
     def get_filtersys(self, fsys, ccd=None, close=True):
